@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADJUTANT</title>
+  <link rel="icon" href="/icons/adjutant.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/vendor/xterm.css">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div id="noise"></div>
+  <div id="scan"></div>
+  <div id="crt">
+    <header id="top">
+      <div class="brand">
+        <span class="chevron"></span>
+        <div>
+          <div class="title">ADJUTANT</div>
+          <div class="subtitle">COMMAND CONSOLE // GROK BUILD</div>
+        </div>
+      </div>
+      <div class="ticks" aria-hidden="true"></div>
+      <div class="link">
+        <span class="led" id="led"></span>
+        <span id="link-state">STANDBY</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="bezel">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+        <div id="term-wrap">
+          <div id="term"></div>
+          <div id="boot">
+            <pre id="boot-log"></pre>
+            <div id="boot-hint">AWAITING COMM-LINK</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="bottom">
+      <span id="meta-mode">PTY</span>
+      <span class="sep">/</span>
+      <span id="meta-size">--×--</span>
+      <span class="sep">/</span>
+      <span id="meta-cwd" title=""></span>
+      <span class="grow"></span>
+      <span id="meta-host">127.0.0.1</span>
+      <span class="sep">/</span>
+      <span id="meta-clock"></span>
+    </footer>
+  </div>
+  <script src="/vendor/xterm.js"></script>
+  <script src="/vendor/addon-fit.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

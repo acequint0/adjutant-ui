@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${ADJUTANT_UI_ROOT:-}" && -f "${ADJUTANT_UI_ROOT}/server.py" ]]; then
+  ROOT="$ADJUTANT_UI_ROOT"
+else
+  ROOT=""
+  here="$(cd "$(dirname "$0")" && pwd)"
+  candidates=(
+    "${XDG_DATA_HOME:-$HOME/.local/share}/adjutant-ui"
+    "$HOME/.local/share/adjutant-ui"
+    /usr/local/share/adjutant-ui
+    /usr/share/adjutant-ui
+  )
+  if [[ -f "$here/../server.py" ]]; then
+    candidates+=("$(cd "$here/.." && pwd)")
+  fi
+  for c in "${candidates[@]}"; do
+    if [[ -f "$c/server.py" ]]; then
+      ROOT="$c"
+      break
+    fi
+  done
+fi
+
+if [[ -z "${ROOT}" || ! -f "$ROOT/server.py" ]]; then
+  echo "adjutant: UI files not found. Re-run the installer from adjutant-ui/." >&2
+  exit 127
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "adjutant: python3 is required (apt install python3)" >&2
+  exit 127
+fi
+
+exec python3 "$ROOT/server.py" "$@"
