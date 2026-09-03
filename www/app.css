@@ -7,18 +7,18 @@
 }
 
 :root {
-  --bg: #050708;
-  --panel: #081112;
-  --bezel: #0b1617;
-  --cyan: #3ee0d8;
-  --cyan-2: #1d8f8a;
-  --ice: #d9fffa;
-  --muted: #7ea8a4;
+  --bg: #050000;
+  --panel: #0a0202;
+  --bezel: #0d0404;
+  --red: #e22b2b;
+  --red-2: #8a1a1a;
+  --ice: #ffd6d6;
+  --muted: #a07070;
   --amber: #ffb347;
-  --danger: #ff5a4a;
-  --line: rgba(62, 224, 216, 0.35);
-  --line-dim: rgba(62, 224, 216, 0.12);
-  --glow: 0 0 12px rgba(62, 224, 216, 0.28);
+  --danger: #ff6a4a;
+  --line: rgba(226, 43, 43, 0.38);
+  --line-dim: rgba(226, 43, 43, 0.14);
+  --glow: 0 0 12px rgba(226, 43, 43, 0.34);
   --font: "Share Tech Mono", "Noto Sans Mono", ui-monospace, monospace;
 }
 
@@ -35,8 +35,8 @@ html, body {
 
 body {
   background:
-    radial-gradient(1200px 700px at 50% -10%, rgba(62, 224, 216, 0.07), transparent 60%),
-    linear-gradient(180deg, #070b0c 0%, #050708 100%);
+    radial-gradient(1200px 700px at 50% -10%, rgba(226, 43, 43, 0.08), transparent 60%),
+    linear-gradient(180deg, #0a0202 0%, #050000 100%);
 }
 
 #noise, #scan {
@@ -106,8 +106,8 @@ footer#bottom {
 .chevron {
   width: 18px;
   height: 18px;
-  border-left: 2px solid var(--cyan);
-  border-bottom: 2px solid var(--cyan);
+  border-left: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
   transform: rotate(-45deg);
   box-shadow: var(--glow);
 }
@@ -116,7 +116,7 @@ footer#bottom {
   font-size: 20px;
   letter-spacing: 0.34em;
   line-height: 1;
-  color: var(--cyan);
+  color: var(--red);
   text-shadow: var(--glow);
 }
 
@@ -133,8 +133,8 @@ footer#bottom {
   background:
     repeating-linear-gradient(
       to right,
-      var(--cyan-2) 0,
-      var(--cyan-2) 1px,
+      var(--red-2) 0,
+      var(--red-2) 1px,
       transparent 1px,
       transparent 10px
     );
@@ -160,8 +160,8 @@ footer#bottom {
 }
 
 .led.ok {
-  background: var(--cyan);
-  box-shadow: 0 0 10px var(--cyan);
+  background: var(--red);
+  box-shadow: 0 0 10px var(--red);
 }
 
 .led.bad {
@@ -178,7 +178,7 @@ main {
   position: relative;
   height: 100%;
   background:
-    linear-gradient(180deg, rgba(62, 224, 216, 0.04), transparent 18%),
+    linear-gradient(180deg, rgba(226, 43, 43, 0.05), transparent 18%),
     var(--bezel);
   border: 1px solid var(--line);
   box-shadow:
@@ -194,10 +194,10 @@ main {
   pointer-events: none;
 }
 
-.corner.tl { top: -1px; left: -1px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
-.corner.tr { top: -1px; right: -1px; border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
-.corner.bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
-.corner.br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+.corner.tl { top: -1px; left: -1px; border-top: 2px solid var(--red); border-left: 2px solid var(--red); }
+.corner.tr { top: -1px; right: -1px; border-top: 2px solid var(--red); border-right: 2px solid var(--red); }
+.corner.bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--red); border-left: 2px solid var(--red); }
+.corner.br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--red); border-right: 2px solid var(--red); }
 
 #term-wrap {
   position: absolute;
@@ -223,7 +223,7 @@ main {
   flex-direction: column;
   justify-content: center;
   padding: 8% 10%;
-  background: radial-gradient(circle at 50% 40%, rgba(62, 224, 216, 0.07), transparent 55%);
+  background: radial-gradient(circle at 50% 40%, rgba(226, 43, 43, 0.08), transparent 55%);
   z-index: 4;
 }
 
@@ -232,7 +232,7 @@ main {
 #boot-log {
   margin: 0;
   font: 15px/1.7 var(--font);
-  color: var(--cyan);
+  color: var(--red);
   text-shadow: var(--glow);
   min-height: 10.5em;
   white-space: pre-wrap;
