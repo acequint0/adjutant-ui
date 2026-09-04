@@ -395,6 +395,165 @@ main {
   letter-spacing: 0.04em;
 }
 
+.dock-btn {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 5px 14px 4px;
+  border: 1px solid var(--line);
+  color: var(--red);
+  background: rgba(226, 43, 43, 0.08);
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.dock-btn:hover,
+.dock-btn:focus-visible {
+  color: var(--ice);
+  background: rgba(226, 43, 43, 0.22);
+  box-shadow: var(--glow);
+  outline: none;
+}
+
+#llama-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: none;
+  background: #050805;
+}
+
+html.llama #llama-wrap:not([hidden]) {
+  display: block;
+}
+
+#llama-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #050805;
+}
+
+#llama-offline {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 8%;
+  background: radial-gradient(circle at 50% 40%, rgba(46, 229, 106, 0.1), transparent 55%);
+}
+
+#llama-wrap.offline #llama-frame,
+#llama-wrap.starting #llama-frame {
+  display: none;
+}
+
+#llama-wrap.offline #llama-offline,
+#llama-wrap.starting #llama-offline {
+  display: flex;
+}
+
+html.llama .dock-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.llama-off-title {
+  color: var(--red);
+  letter-spacing: 0.34em;
+  font-size: 18px;
+  text-shadow: var(--glow);
+}
+
+.llama-off-body,
+.llama-off-hint {
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  font-size: 12px;
+}
+
+.llama-off-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+html.llama {
+  --bg: #000500;
+  --panel: #020a02;
+  --bezel: #040d04;
+  --red: #2ee56a;
+  --red-2: #147a38;
+  --ice: #d8ffe4;
+  --muted: #6ea87a;
+  --amber: #7dff9a;
+  --danger: #4dff88;
+  --line: rgba(46, 229, 106, 0.4);
+  --line-dim: rgba(46, 229, 106, 0.16);
+  --glow: 0 0 12px rgba(46, 229, 106, 0.4);
+}
+
+html.llama body {
+  background: #000500;
+}
+
+html.llama #crt {
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(46, 229, 106, 0.1), transparent 60%),
+    linear-gradient(180deg, #020a02 0%, #000500 100%);
+  box-shadow:
+    0 0 0 1px rgba(46, 229, 106, 0.3),
+    0 0 0 4px rgba(46, 229, 106, 0.08),
+    0 0 28px rgba(46, 229, 106, 0.1);
+}
+
+html.llama .bezel {
+  background:
+    linear-gradient(180deg, rgba(46, 229, 106, 0.06), transparent 18%),
+    var(--bezel);
+}
+
+html.llama #boot {
+  background: radial-gradient(circle at 50% 40%, rgba(46, 229, 106, 0.08), transparent 55%);
+}
+
+html.llama #pcb-hatch path { stroke: var(--red); }
+html.llama #via circle:first-child,
+html.llama #via-sm circle:first-child { fill: #1a8a3a; }
+html.llama #via circle:last-child,
+html.llama #via-sm circle:last-child { fill: #000500; }
+html.llama #tp circle:first-child { stroke: var(--red); }
+html.llama #tp circle:last-child { fill: var(--red); }
+html.llama #pcb .pcb-fingers { fill: #6aff8a; }
+
+html.llama .dock-btn {
+  color: #041208;
+  background: var(--red);
+  border-color: var(--red);
+  box-shadow: var(--glow);
+}
+
+html.llama .exfil-btn {
+  background: rgba(46, 229, 106, 0.08);
+}
+
+html.llama .exfil-btn:hover,
+html.llama .exfil-btn:focus-visible {
+  background: rgba(46, 229, 106, 0.22);
+}
+
+html.llama #term,
+html.llama #boot {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 1; }
@@ -411,5 +570,6 @@ main {
   .title { letter-spacing: 0.28em; font-size: 16px; }
   #boot { padding: 8%; }
   .exfil-btn { padding: 6px 8px 5px; letter-spacing: 0.12em; }
+  .dock-btn { padding: 5px 8px 4px; letter-spacing: 0.12em; }
   #meta-host { display: none; }
 }

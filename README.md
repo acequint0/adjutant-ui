@@ -1,4 +1,4 @@
-# Adjutant UI 0.1
+# Adjutant UI 0.2.0
 
 Web command console for Grok Build. `adjutant` opens a local browser window that wraps the Grok TUI in a terminal emulator.
 
@@ -17,7 +17,7 @@ sudo apt-get update
 sudo apt-get install -y git python3
 git clone https://github.com/acequint0/adjutant-ui.git
 cd adjutant-ui
-git checkout v0.1.0
+git checkout v0.2.0
 chmod +x install.sh
 ./install.sh
 ```
@@ -33,7 +33,7 @@ git pull
 ### 2. One-liner from GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.1.0/packaging/kali-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packaging/kali-install.sh | bash
 ```
 
 ### 3. Add GitHub as an apt repository
@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.1.0/packag
 This points apt at the latest GitHub Release (Packages index + `.deb`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.1.0/packaging/add-repo.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packaging/add-repo.sh | sudo bash
 ```
 
 Or by hand:
@@ -63,8 +63,8 @@ sudo apt-get install --only-upgrade adjutant-ui
 ### 4. Download the `.deb`
 
 ```bash
-wget https://github.com/acequint0/adjutant-ui/releases/download/v0.1.0/adjutant-ui_0.1.0_all.deb
-sudo apt-get install -y ./adjutant-ui_0.1.0_all.deb
+wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.0/adjutant-ui_0.2.0_all.deb
+sudo apt-get install -y ./adjutant-ui_0.2.0_all.deb
 ```
 
 ## Install from this folder (any Debian-based OS)
@@ -87,7 +87,7 @@ Build the Debian package locally:
 
 ```bash
 ./packaging/build-deb.sh
-sudo apt-get install -y ./dist/adjutant-ui_0.1.0_all.deb
+sudo apt-get install -y ./dist/adjutant-ui_0.2.0_all.deb
 ```
 
 ## Use
@@ -105,9 +105,18 @@ adjutant --version
 
 The console header has **IMAGINE** and **GROK** buttons. Imagine is the original web picker (four variants). Build's `image_gen` tool still writes one local file per call; for art, Adjutant is set to generate four and wait for a pick, or you can jump to grok.com/imagine.
 
+The footer has a **LLAMAFILE** button. The first click starts `~/llamafile-pentest/run.sh` if nothing is listening on `127.0.0.1:8080`, flips the console green, and wraps that UI. Later clicks just bring that session back (llamafile stays running). Click the button again while it is showing to return to the Grok terminal. Override with `ADJUTANT_LLAMAFILE` / `ADJUTANT_LLAMAFILE_ROOT` if needed.
+
 Extra arguments are forwarded to Grok: `adjutant -c`, `adjutant -- "fix the bug"`.
 
 The console binds to `127.0.0.1` only.
+
+## Versions
+
+| Version | Notes |
+|---|---|
+| **0.2.0** | Footer **LLAMAFILE** button. First click starts the local llamafile at `127.0.0.1:8080` and wraps it in a green console. Later clicks bring that session back. |
+| 0.1.0 | First Kali/Debian release: web terminal, IMAGINE / GROK buttons, HUD, `--shell`, `--tui`. |
 
 ## Sound clip
 

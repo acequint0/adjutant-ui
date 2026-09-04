@@ -190,7 +190,7 @@
         <span class="chevron"></span>
         <div>
           <div class="title">ADJUTANT</div>
-          <div class="subtitle">COMMAND CONSOLE // GROK BUILD</div>
+          <div class="subtitle" id="subtitle">COMMAND CONSOLE // GROK BUILD</div>
         </div>
       </div>
       <div class="ticks" aria-hidden="true"></div>
@@ -216,6 +216,19 @@
             <pre id="boot-log"></pre>
             <div id="boot-hint">AWAITING COMM-LINK</div>
           </div>
+          <div id="llama-wrap" hidden>
+            <iframe
+              id="llama-frame"
+              title="Llamafile"
+              src="about:blank"
+              allow="clipboard-read; clipboard-write"
+            ></iframe>
+            <div id="llama-offline">
+              <div class="llama-off-title" id="llama-off-title">BRINGING UP LLAMAFILE</div>
+              <div class="llama-off-body" id="llama-off-body">STARTING LOCAL MODEL</div>
+              <div class="llama-off-hint" id="llama-off-hint">127.0.0.1:8080</div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -227,6 +240,10 @@
       <span class="sep">/</span>
       <span id="meta-cwd" title=""></span>
       <span class="grow"></span>
+      <button type="button" id="btn-llamafile" class="dock-btn" aria-pressed="false" title="Wrap local llamafile at 127.0.0.1:8080">
+        LLAMAFILE
+      </button>
+      <span class="sep">/</span>
       <span id="meta-host">127.0.0.1</span>
       <span class="sep">/</span>
       <span id="meta-clock"></span>

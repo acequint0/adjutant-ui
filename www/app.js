@@ -15,11 +15,33 @@
   const metaClock = $("meta-clock");
   const metaMode = $("meta-mode");
   const metaHost = $("meta-host");
+  const subtitle = $("subtitle");
+  const btnLlama = $("btn-llamafile");
+  const llamaWrap = $("llama-wrap");
+  const llamaFrame = $("llama-frame");
+  const llamaOffTitle = $("llama-off-title");
+  const llamaOffBody = $("llama-off-body");
+  const llamaOffHint = $("llama-off-hint");
+
+  const SUBTITLE_AGENT = "COMMAND CONSOLE // GROK BUILD";
+  const SUBTITLE_LLAMA = "LOCAL LLM // 127.0.0.1:8080";
+  const LLAMAFILE_FALLBACK = "http://127.0.0.1:8080/";
 
   metaHost.textContent = location.hostname || "127.0.0.1";
+  let llamaOn = false;
+  let llamaBusy = false;
+  let llamaLoaded = false;
+  let grokLink = "";
+  let modeBeforeLlama = metaMode.textContent || "PTY";
 
-  const setLink = (mode) => {
+  const setLink = (mode, origin) => {
+    if (origin !== "llama") grokLink = mode;
+    if (llamaOn && origin !== "llama") return;
     led.className = "led" + (mode === "ok" ? " ok" : mode === "bad" ? " bad" : "");
+    if (origin === "llama") {
+      linkState.textContent = mode === "ok" ? "LLAMAFILE" : "NO LLAMAFILE";
+      return;
+    }
     linkState.textContent =
       mode === "ok" ? "ONLINE" : mode === "bad" ? "OFFLINE" : "STANDBY";
   };
@@ -32,7 +54,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.1" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
@@ -188,7 +210,8 @@
     });
 
     document.addEventListener("click", (ev) => {
-      if (ev.target.closest("a, button, nav, input, textarea")) return;
+      if (llamaOn) return;
+      if (ev.target.closest("a, button, nav, input, textarea, iframe")) return;
       term.focus();
     });
   };
@@ -233,6 +256,144 @@
   $("btn-grok").addEventListener("click", (ev) => {
     ev.preventDefault();
     openPortal("https://grok.com", "adjutantGrok");
+  });
+
+  const llamaUrl = (base) => {
+    const raw = (base || LLAMAFILE_FALLBACK).trim();
+    return raw.endsWith("/") ? raw : raw + "/";
+  };
+
+  const probeLlama = async () => {
+    try {
+      const resp = await fetch("/api/llamafile", { cache: "no-store" });
+      const meta = await resp.json();
+      return {
+        ok: Boolean(meta && meta.ok),
+        url: llamaUrl(meta && meta.url),
+        error: meta && meta.error,
+      };
+    } catch {
+      return { ok: false, url: llamaUrl(LLAMAFILE_FALLBACK) };
+    }
+  };
+
+  const ensureLlama = async () => {
+    const already = await probeLlama();
+    if (already.ok) return already;
+    const resp = await fetch("/api/llamafile", {
+      method: "POST",
+      cache: "no-store",
+    });
+    const meta = await resp.json();
+    return {
+      ok: Boolean(meta && meta.ok),
+      url: llamaUrl(meta && meta.url),
+      error: (meta && (meta.error || meta.status)) || "start failed",
+    };
+  };
+
+  const showLlamaOverlay = (kind, title, body, hint) => {
+    llamaWrap.classList.remove("offline", "starting");
+    llamaWrap.classList.add(kind);
+    llamaOffTitle.textContent = title;
+    llamaOffBody.textContent = body;
+    llamaOffHint.textContent = hint;
+  };
+
+  const setLlama = async (on) => {
+    llamaOn = on;
+    document.documentElement.classList.toggle("llama", on);
+    btnLlama.setAttribute("aria-pressed", on ? "true" : "false");
+    subtitle.textContent = on ? SUBTITLE_LLAMA : SUBTITLE_AGENT;
+    if (!on) {
+      llamaWrap.hidden = true;
+      llamaWrap.classList.remove("offline", "starting");
+      metaMode.textContent = modeBeforeLlama;
+      setLink(grokLink || "");
+      term.focus();
+      return;
+    }
+
+    modeBeforeLlama = metaMode.textContent || modeBeforeLlama;
+    metaMode.textContent = "LLAMA";
+    llamaWrap.hidden = false;
+
+    const frameSrc = llamaFrame.getAttribute("src") || "";
+    if (llamaLoaded && frameSrc && frameSrc !== "about:blank") {
+      const probe = await probeLlama();
+      if (probe.ok) {
+        llamaWrap.classList.remove("offline", "starting");
+        setLink("ok", "llama");
+        try {
+          llamaFrame.contentWindow && llamaFrame.contentWindow.focus();
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      llamaLoaded = false;
+    }
+
+    showLlamaOverlay(
+      "starting",
+      "BRINGING UP LLAMAFILE",
+      "STARTING LOCAL MODEL",
+      "127.0.0.1:8080"
+    );
+    setLink("ok", "llama");
+    linkState.textContent = "STARTING";
+    llamaBusy = true;
+    btnLlama.disabled = true;
+    try {
+      const probe = await ensureLlama();
+      if (!llamaOn) {
+        llamaLoaded = Boolean(probe.ok);
+        if (probe.ok && (llamaFrame.getAttribute("src") || "") === "about:blank") {
+          llamaFrame.src = probe.url;
+        }
+        return;
+      }
+      if (probe.ok) {
+        llamaWrap.classList.remove("offline", "starting");
+        if (llamaFrame.getAttribute("src") !== probe.url) llamaFrame.src = probe.url;
+        llamaLoaded = true;
+        setLink("ok", "llama");
+        try {
+          llamaFrame.contentWindow && llamaFrame.contentWindow.focus();
+        } catch {
+          /* ignore */
+        }
+      } else {
+        llamaLoaded = false;
+        showLlamaOverlay(
+          "offline",
+          "LLAMAFILE FAILED",
+          "LOCAL MODEL DID NOT COME UP",
+          String(probe.error || "see llamafile log").slice(0, 140)
+        );
+        setLink("bad", "llama");
+      }
+    } catch (err) {
+      if (!llamaOn) return;
+      llamaLoaded = false;
+      showLlamaOverlay(
+        "offline",
+        "LLAMAFILE FAILED",
+        "LOCAL MODEL DID NOT COME UP",
+        String(err && err.message ? err.message : err).slice(0, 140)
+      );
+      setLink("bad", "llama");
+    } finally {
+      llamaBusy = false;
+      btnLlama.disabled = false;
+    }
+  };
+
+  btnLlama.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (llamaBusy) return;
+    setLlama(!llamaOn);
   });
 
   const start = async () => {

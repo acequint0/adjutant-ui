@@ -16,6 +16,7 @@ import signal
 import struct
 import fcntl
 import termios
+import threading
 import time
 import urllib.parse
 from http import HTTPStatus
@@ -25,6 +26,9 @@ from typing import Any
 BIND_DEFAULT = "127.0.0.1"
 PORT_DEFAULT = 4747
 UI_NAME = "adjutant-ui"
+LLAMAFILE_DEFAULT = "http://127.0.0.1:8080"
+LLAMAFILE_WAIT_DEFAULT = 90
+_llamafile_start_lock = threading.Lock()
 
 HERE = Path(__file__).resolve().parent
 WWW = HERE / "www"
@@ -367,6 +371,12 @@ class ConsoleServer:
                 },
             )
             return
+        if method == "GET" and path == "/api/llamafile":
+            await self._send_json(writer, await asyncio.to_thread(probe_llamafile))
+            return
+        if method == "POST" and path == "/api/llamafile":
+            await self._send_json(writer, await asyncio.to_thread(start_llamafile))
+            return
         if method == "POST" and path == "/api/session":
             if not self._authorized(headers, query):
                 await self._send_status(writer, HTTPStatus.UNAUTHORIZED)
@@ -670,6 +680,149 @@ class ConsoleServer:
         self.sessions.pop(sess.id, None)
 
 
+def llamafile_base() -> str:
+    return (os.environ.get("ADJUTANT_LLAMAFILE") or LLAMAFILE_DEFAULT).rstrip("/")
+
+
+def llamafile_root() -> Path:
+    env = os.environ.get("ADJUTANT_LLAMAFILE_ROOT")
+    if env:
+        return Path(env)
+    return Path.home() / "llamafile-pentest"
+
+
+def llamafile_wait_secs() -> float:
+    raw = os.environ.get("ADJUTANT_LLAMAFILE_WAIT")
+    if not raw:
+        return float(LLAMAFILE_WAIT_DEFAULT)
+    try:
+        return max(3.0, float(raw))
+    except ValueError:
+        return float(LLAMAFILE_WAIT_DEFAULT)
+
+
+def probe_llamafile() -> dict[str, Any]:
+    import urllib.request
+
+    base = llamafile_base()
+    url = base + "/health"
+    try:
+        req = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
+            raw = resp.read().decode("utf-8", "replace")
+            status = resp.status
+        ok = status == 200
+        try:
+            payload = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            payload = {}
+        if isinstance(payload, dict) and payload.get("status") and payload["status"] != "ok":
+            ok = False
+        return {"ok": ok, "url": base + "/", "status": payload.get("status") if isinstance(payload, dict) else None}
+    except Exception:
+        return {"ok": False, "url": base + "/", "status": "offline"}
+
+
+def start_llamafile() -> dict[str, Any]:
+    import subprocess
+
+    probe = probe_llamafile()
+    if probe.get("ok"):
+        probe["started"] = False
+        return probe
+
+    with _llamafile_start_lock:
+        probe = probe_llamafile()
+        if probe.get("ok"):
+            probe["started"] = False
+            return probe
+
+        root = llamafile_root()
+        script = root / "run.sh"
+        if not script.is_file():
+            return {
+                "ok": False,
+                "url": llamafile_base() + "/",
+                "status": "missing",
+                "error": f"llamafile launcher not found: {script}",
+                "started": False,
+            }
+        if not os.access(script, os.X_OK):
+            return {
+                "ok": False,
+                "url": llamafile_base() + "/",
+                "status": "missing",
+                "error": f"llamafile launcher is not executable: {script}",
+                "started": False,
+            }
+
+        parsed = urllib.parse.urlparse(llamafile_base())
+        env = os.environ.copy()
+        env["HOST"] = parsed.hostname or "127.0.0.1"
+        env["PORT"] = str(parsed.port or 8080)
+
+        log_path_lf = root / "logs" / "llamafile.log"
+        log_path_lf.parent.mkdir(parents=True, exist_ok=True)
+        log_f = log_path_lf.open("a")
+        try:
+            proc = subprocess.Popen(
+                [str(script)],
+                cwd=str(root),
+                env=env,
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+                close_fds=True,
+            )
+        except OSError as exc:
+            log_f.close()
+            return {
+                "ok": False,
+                "url": llamafile_base() + "/",
+                "status": "error",
+                "error": str(exc),
+                "started": False,
+            }
+        finally:
+            try:
+                log_f.close()
+            except OSError:
+                pass
+
+        deadline = time.time() + llamafile_wait_secs()
+        while time.time() < deadline:
+            if proc.poll() is not None:
+                tail = ""
+                try:
+                    tail = log_path_lf.read_text(errors="replace")[-400:]
+                except OSError:
+                    pass
+                return {
+                    "ok": False,
+                    "url": llamafile_base() + "/",
+                    "status": "exited",
+                    "error": (tail.strip() or f"llamafile exited {proc.returncode}"),
+                    "started": False,
+                    "pid": proc.pid,
+                }
+            probe = probe_llamafile()
+            if probe.get("ok"):
+                probe["started"] = True
+                probe["pid"] = proc.pid
+                return probe
+            time.sleep(0.4)
+
+        return {
+            "ok": False,
+            "url": llamafile_base() + "/",
+            "status": "timeout",
+            "error": "llamafile did not become ready in time",
+            "started": False,
+            "pid": proc.pid,
+        }
+
+
 def post_session(state: dict[str, Any], cwd: str, argv: list[str], mode: str) -> dict[str, Any]:
     import urllib.request
 
@@ -849,7 +1002,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.1.0"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.0"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:

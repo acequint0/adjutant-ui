@@ -115,6 +115,14 @@ def main() -> None:
                 html = resp.read().decode()
             assert "ADJUTANT" in html
             assert "/app.js" in html
+            assert "btn-llamafile" in html
+            assert "llama-frame" in html
+            assert "127.0.0.1:8080" in html
+
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/llamafile", timeout=3) as resp:
+                llama = json.loads(resp.read().decode())
+            assert "ok" in llama
+            assert llama.get("url", "").startswith("http://")
 
             sock = socket.create_connection(("127.0.0.1", port), timeout=3)
             ws_client_handshake(sock, f"127.0.0.1:{port}", f"/ws/{sid}")
