@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build an architecture-independent .deb for Debian/Ubuntu/Mint.
+# Build an architecture-independent .deb for Debian, Ubuntu, Mint, and Kali.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION="$(cat VERSION)"
@@ -36,7 +36,7 @@ Exec=/usr/bin/adjutant --web
 Icon=adjutant
 Terminal=false
 Categories=Development;Utility;
-Keywords=grok;agent;terminal;adjutant;
+Keywords=grok;agent;terminal;adjutant;kali;
 StartupNotify=true
 EOF
 
@@ -46,13 +46,15 @@ Version: ${VERSION}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: python3 (>= 3.9), xdg-utils
-Recommends: chromium | chromium-browser | firefox | google-chrome-stable
-Maintainer: ace <ace@localhost>
-Description: Adjutant web console for Grok Build
- Wraps the Grok Build agent TUI in a local-only web terminal with an
- Adjutant command-console UI. Requires Grok Build already installed
- for the user (~/.grok/bin/agent).
+Depends: python3 (>= 3.9)
+Recommends: xdg-utils, chromium | chromium-browser | firefox-esr | firefox | google-chrome-stable
+Maintainer: acequint0 <aceaftercolorado@gmail.com>
+Homepage: https://github.com/acequint0/adjutant-ui
+Description: Adjutant web console for Grok Build (version 0.1)
+ Local-only web terminal that wraps Grok Build in the Adjutant command
+ console. Works on Debian, Ubuntu, Linux Mint, and Kali Linux.
+ Grok Build (~/.grok/bin/agent) is required for the agent console;
+ adjutant --shell still works without it.
 EOF
 
 cat > "$DEST/DEBIAN/postinst" <<'EOF'

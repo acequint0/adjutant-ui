@@ -32,7 +32,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 12.4" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.1" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
@@ -187,8 +187,53 @@
       sendResize();
     });
 
-    document.addEventListener("click", () => term.focus());
+    document.addEventListener("click", (ev) => {
+      if (ev.target.closest("a, button, nav, input, textarea")) return;
+      term.focus();
+    });
   };
+
+  const openPortal = (url, name) => {
+    const width = Math.min(1440, Math.max(900, Math.round(screen.availWidth * 0.68)));
+    const height = Math.min(960, Math.max(700, Math.round(screen.availHeight * 0.86)));
+    const left = Math.max(24, Math.round(screen.availWidth - width - 28));
+    const top = Math.max(24, Math.round((screen.availHeight - height) / 2));
+    const features = [
+      "popup=yes",
+      `width=${width}`,
+      `height=${height}`,
+      `left=${left}`,
+      `top=${top}`,
+      "resizable=yes",
+      "scrollbars=yes",
+      "menubar=no",
+      "toolbar=no",
+      "location=yes",
+      "status=no",
+    ].join(",");
+    const win = window.open(url, name, features);
+    if (win) {
+      try {
+        win.opener = null;
+      } catch {
+        /* ignore */
+      }
+      try {
+        win.focus();
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  $("btn-imagine").addEventListener("click", (ev) => {
+    ev.preventDefault();
+    openPortal("https://grok.com/imagine", "adjutantImagine");
+  });
+  $("btn-grok").addEventListener("click", (ev) => {
+    ev.preventDefault();
+    openPortal("https://grok.com", "adjutantGrok");
+  });
 
   const start = async () => {
     await typeLines();

@@ -34,9 +34,108 @@ html, body {
 }
 
 body {
-  background:
-    radial-gradient(1200px 700px at 50% -10%, rgba(226, 43, 43, 0.08), transparent 60%),
-    linear-gradient(180deg, #0a0202 0%, #050000 100%);
+  padding: 56px 58px 48px;
+  background: #050000;
+}
+
+#pcb {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pcb-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.pcb-edge {
+  position: absolute;
+  display: block;
+  overflow: visible;
+}
+
+.pcb-n { top: 0; left: 0; width: 100%; height: 56px; }
+.pcb-s { bottom: 0; left: 0; width: 100%; height: 48px; }
+.pcb-w { top: 56px; left: 0; width: 58px; height: calc(100% - 104px); }
+.pcb-e { top: 56px; right: 0; width: 58px; height: calc(100% - 104px); }
+
+#pcb .pcb-pour { fill: url(#pcb-hatch); }
+#pcb .pcb-guard,
+#pcb .pcb-pwr,
+#pcb .pcb-sig,
+#pcb .pcb-fine,
+#pcb .pcb-ang,
+#pcb .pcb-ic {
+  vector-effect: non-scaling-stroke;
+}
+#pcb .pcb-guard {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 1.1;
+  opacity: 0.22;
+}
+#pcb .pcb-pwr {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 4.2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  opacity: 0.72;
+}
+#pcb .pcb-sig {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2.15;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  opacity: 0.78;
+}
+#pcb .pcb-fine {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 1.25;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  opacity: 0.55;
+}
+#pcb .pcb-ang {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2;
+  stroke-linecap: square;
+  opacity: 0.7;
+}
+#pcb .pcb-ic {
+  fill: rgba(226, 43, 43, 0.08);
+  stroke: var(--red);
+  stroke-width: 1.1;
+  opacity: 0.85;
+}
+#pcb .pcb-pads { fill: var(--red); opacity: 0.82; }
+#pcb .pcb-fingers { fill: #ff6a6a; opacity: 0.7; }
+#pcb .pcb-silk {
+  fill: var(--muted);
+  font-family: var(--font);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  opacity: 0.55;
+}
+#pcb .pcb-live {
+  stroke-dasharray: 10 14;
+  animation: pcb-flow 2.8s linear infinite;
+}
+#pcb .pcb-live-slow {
+  stroke-dasharray: 8 16;
+  animation: pcb-flow 4.4s linear infinite reverse;
+}
+
+@keyframes pcb-flow {
+  to { stroke-dashoffset: -48; }
 }
 
 #noise, #scan {
@@ -69,11 +168,20 @@ body {
 }
 
 #crt {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;
-  padding: 14px 16px 10px;
+  padding: 10px 12px 8px;
   gap: 10px;
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(226, 43, 43, 0.08), transparent 60%),
+    linear-gradient(180deg, #0a0202 0%, #050000 100%);
+  box-shadow:
+    0 0 0 1px rgba(226, 43, 43, 0.28),
+    0 0 0 4px rgba(226, 43, 43, 0.07),
+    0 0 28px rgba(226, 43, 43, 0.08);
 }
 
 header#top, footer#bottom {
@@ -140,6 +248,33 @@ footer#bottom {
     );
   opacity: 0.55;
   mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.exfil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.exfil-btn {
+  display: inline-block;
+  padding: 6px 12px 5px;
+  border: 1px solid var(--line);
+  color: var(--red);
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  background: rgba(226, 43, 43, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.exfil-btn:hover,
+.exfil-btn:focus-visible {
+  color: var(--ice);
+  background: rgba(226, 43, 43, 0.22);
+  box-shadow: var(--glow);
+  outline: none;
 }
 
 .link {
@@ -266,7 +401,15 @@ main {
 }
 
 @media (max-width: 800px) {
-  .subtitle, .ticks { display: none; }
+  body { padding: 28px 22px 22px; }
+  .pcb-n { height: 28px; }
+  .pcb-s { height: 22px; }
+  .pcb-w { top: 28px; width: 22px; height: calc(100% - 50px); }
+  .pcb-e { top: 28px; width: 22px; height: calc(100% - 50px); }
+  .pcb-silk { display: none; }
+  .subtitle, .ticks, #link-state { display: none; }
   .title { letter-spacing: 0.28em; font-size: 16px; }
   #boot { padding: 8%; }
+  .exfil-btn { padding: 6px 8px 5px; letter-spacing: 0.12em; }
+  #meta-host { display: none; }
 }

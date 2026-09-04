@@ -9,6 +9,179 @@
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
+  <div id="pcb" aria-hidden="true">
+    <svg class="pcb-defs" width="0" height="0">
+      <defs>
+        <pattern id="pcb-hatch" width="7" height="7" patternUnits="userSpaceOnUse">
+          <path d="M0 7 L7 0" stroke="#e22b2b" stroke-width="0.45" opacity="0.28"/>
+        </pattern>
+        <g id="via">
+          <circle r="5" fill="#c41e1e"/>
+          <circle r="2.05" fill="#050000"/>
+        </g>
+        <g id="via-sm">
+          <circle r="3.4" fill="#c41e1e"/>
+          <circle r="1.35" fill="#050000"/>
+        </g>
+        <g id="tp">
+          <circle r="6.2" fill="none" stroke="#e22b2b" stroke-width="1.25"/>
+          <circle r="2.2" fill="#e22b2b"/>
+        </g>
+      </defs>
+    </svg>
+
+    <svg class="pcb-edge pcb-n" viewBox="0 0 1600 56" preserveAspectRatio="none">
+      <path class="pcb-pour" d="M0 0 H200 V56 H0 Z"/>
+      <path class="pcb-pour" d="M1600 0 H1400 V56 H1600 Z"/>
+      <path class="pcb-guard" d="M8 4 H1592"/>
+      <path class="pcb-pwr" d="M24 12 H1576"/>
+      <path class="pcb-sig pcb-live" d="M70 24 H360 L378 40 H510 L528 24 H770 L790 50"/>
+      <path class="pcb-sig" d="M120 36 H250 L264 52"/>
+      <path class="pcb-sig" d="M840 24 H1088 L1108 40 H1232 L1250 24 H1488"/>
+      <path class="pcb-fine" d="M188 12 V36 H230"/>
+      <path class="pcb-fine" d="M300 12 V24"/>
+      <path class="pcb-fine" d="M620 12 V36 L646 54"/>
+      <path class="pcb-fine" d="M980 12 V24"/>
+      <path class="pcb-fine" d="M1188 12 V40"/>
+      <path class="pcb-fine" d="M1360 12 V24 H1404 V36"/>
+      <path class="pcb-ang" d="M360 24 L396 56"/>
+      <path class="pcb-ang" d="M1250 24 L1282 52"/>
+      <rect class="pcb-ic" x="48" y="6" width="50" height="24" rx="1"/>
+      <g class="pcb-pads">
+        <rect x="42" y="9" width="8" height="4"/><rect x="42" y="16" width="8" height="4"/><rect x="42" y="23" width="8" height="4"/>
+        <rect x="96" y="9" width="8" height="4"/><rect x="96" y="16" width="8" height="4"/><rect x="96" y="23" width="8" height="4"/>
+        <rect x="128" y="6" width="6" height="10"/><rect x="140" y="6" width="6" height="10"/>
+        <rect x="236" y="6" width="10" height="6"/><rect x="252" y="6" width="10" height="6"/>
+        <rect x="696" y="6" width="6" height="10"/><rect x="708" y="6" width="6" height="10"/>
+        <rect x="1324" y="6" width="10" height="6"/><rect x="1340" y="6" width="10" height="6"/>
+      </g>
+      <rect class="pcb-ic" x="1514" y="8" width="38" height="38" rx="1"/>
+      <g class="pcb-pads">
+        <rect x="1519" y="4" width="4.5" height="6"/><rect x="1528" y="4" width="4.5" height="6"/>
+        <rect x="1537" y="4" width="4.5" height="6"/><rect x="1546" y="4" width="4.5" height="6"/>
+        <rect x="1552" y="13" width="6" height="4.5"/><rect x="1552" y="22" width="6" height="4.5"/>
+        <rect x="1552" y="31" width="6" height="4.5"/>
+        <rect x="1519" y="46" width="4.5" height="6"/><rect x="1528" y="46" width="4.5" height="6"/>
+        <rect x="1537" y="46" width="4.5" height="6"/><rect x="1546" y="46" width="4.5" height="6"/>
+        <rect x="1508" y="13" width="6" height="4.5"/><rect x="1508" y="22" width="6" height="4.5"/>
+        <rect x="1508" y="31" width="6" height="4.5"/>
+      </g>
+      <text class="pcb-silk" x="60" y="22">U1</text>
+      <text class="pcb-silk" x="1524" y="31">U2</text>
+      <text class="pcb-silk" x="128" y="5">C1</text>
+      <text class="pcb-silk" x="236" y="5">R1</text>
+      <text class="pcb-silk" x="50" y="10">TP1</text>
+      <use href="#tp" x="70" y="12"/>
+      <use href="#via" x="188" y="12"/><use href="#via" x="300" y="12"/>
+      <use href="#via" x="620" y="12"/><use href="#via" x="980" y="12"/>
+      <use href="#via" x="1188" y="12"/><use href="#via" x="1360" y="12"/>
+      <use href="#via" x="70" y="24"/><use href="#via" x="230" y="36"/>
+      <use href="#via" x="528" y="24"/><use href="#via" x="840" y="24"/>
+      <use href="#via" x="1088" y="24"/><use href="#via" x="1488" y="24"/>
+      <use href="#via-sm" x="24" y="28"/><use href="#via-sm" x="42" y="28"/>
+      <use href="#via-sm" x="1576" y="28"/><use href="#via-sm" x="1558" y="28"/>
+      <use href="#via-sm" x="1404" y="36"/>
+    </svg>
+
+    <svg class="pcb-edge pcb-s" viewBox="0 0 1600 48" preserveAspectRatio="none">
+      <path class="pcb-pour" d="M0 0 H200 V48 H0 Z"/>
+      <path class="pcb-pour" d="M1600 0 H1400 V48 H1600 Z"/>
+      <path class="pcb-guard" d="M8 44 H1592"/>
+      <path class="pcb-pwr" d="M24 36 H1576"/>
+      <path class="pcb-sig" d="M80 24 H330 L348 10 H520"/>
+      <path class="pcb-sig pcb-live-slow" d="M860 24 H1270 L1290 10 H1410"/>
+      <path class="pcb-fine" d="M180 36 V24"/>
+      <path class="pcb-fine" d="M460 36 V10"/>
+      <path class="pcb-fine" d="M740 36 V22 H800 V8"/>
+      <path class="pcb-fine" d="M1100 36 V24"/>
+      <path class="pcb-fine" d="M1460 36 V24 H1500"/>
+      <path class="pcb-ang" d="M330 24 L304 0"/>
+      <path class="pcb-ang" d="M1290 10 L1318 0"/>
+      <g class="pcb-pads">
+        <rect x="164" y="32" width="6" height="10"/><rect x="176" y="32" width="6" height="10"/>
+        <rect x="632" y="36" width="10" height="6"/><rect x="648" y="36" width="10" height="6"/>
+        <rect x="1192" y="32" width="6" height="10"/><rect x="1204" y="32" width="6" height="10"/>
+      </g>
+      <text class="pcb-silk" x="164" y="31">C4</text>
+      <text class="pcb-silk" x="1504" y="16">TP2</text>
+      <use href="#tp" x="1534" y="36"/>
+      <use href="#via" x="80" y="24"/><use href="#via" x="180" y="36"/>
+      <use href="#via" x="460" y="36"/><use href="#via" x="740" y="36"/>
+      <use href="#via" x="1100" y="36"/><use href="#via" x="1460" y="36"/>
+      <use href="#via" x="348" y="10"/><use href="#via" x="1290" y="10"/>
+      <use href="#via-sm" x="24" y="20"/><use href="#via-sm" x="42" y="20"/>
+      <use href="#via-sm" x="1576" y="20"/><use href="#via-sm" x="1558" y="20"/>
+      <use href="#via-sm" x="800" y="8"/><use href="#via-sm" x="1500" y="24"/>
+    </svg>
+
+    <svg class="pcb-edge pcb-w" viewBox="0 0 58 800" preserveAspectRatio="none">
+      <path class="pcb-guard" d="M4 0 V800"/>
+      <path class="pcb-pwr" d="M12 0 V800"/>
+      <path class="pcb-sig pcb-live-slow" d="M26 8 V140 L40 156 V280"/>
+      <path class="pcb-sig" d="M26 320 V500 L42 518 V640"/>
+      <path class="pcb-fine" d="M12 60 H34 V90"/>
+      <path class="pcb-fine" d="M12 200 H26"/>
+      <path class="pcb-fine" d="M12 430 H42"/>
+      <path class="pcb-fine" d="M12 700 V760 H34"/>
+      <path class="pcb-ang" d="M40 280 L56 296"/>
+      <path class="pcb-ang" d="M42 640 L56 654"/>
+      <rect class="pcb-ic" x="16" y="340" width="20" height="110" rx="1"/>
+      <g class="pcb-pads">
+        <rect x="10" y="346" width="8" height="4"/><rect x="10" y="362" width="8" height="4"/>
+        <rect x="10" y="378" width="8" height="4"/><rect x="10" y="394" width="8" height="4"/>
+        <rect x="10" y="410" width="8" height="4"/><rect x="10" y="426" width="8" height="4"/>
+        <rect x="10" y="442" width="8" height="4"/>
+        <rect x="34" y="346" width="8" height="4"/><rect x="34" y="362" width="8" height="4"/>
+        <rect x="34" y="378" width="8" height="4"/><rect x="34" y="394" width="8" height="4"/>
+        <rect x="34" y="410" width="8" height="4"/><rect x="34" y="426" width="8" height="4"/>
+        <rect x="34" y="442" width="8" height="4"/>
+        <rect x="6" y="170" width="10" height="6"/><rect x="6" y="182" width="10" height="6"/>
+        <rect x="6" y="660" width="10" height="6"/><rect x="6" y="672" width="10" height="6"/>
+      </g>
+      <text class="pcb-silk" x="19" y="400" transform="rotate(-90 19 400)">U3</text>
+      <text class="pcb-silk" x="6" y="166">C3</text>
+      <use href="#via" x="12" y="60"/><use href="#via" x="12" y="200"/>
+      <use href="#via" x="12" y="430"/><use href="#via" x="12" y="700"/>
+      <use href="#via" x="26" y="8"/><use href="#via" x="26" y="140"/>
+      <use href="#via" x="40" y="156"/><use href="#via" x="26" y="320"/>
+      <use href="#via" x="42" y="518"/><use href="#via" x="34" y="760"/>
+      <use href="#via-sm" x="34" y="90"/><use href="#via-sm" x="42" y="346"/>
+      <use href="#via-sm" x="42" y="394"/>
+    </svg>
+
+    <svg class="pcb-edge pcb-e" viewBox="0 0 58 800" preserveAspectRatio="none">
+      <path class="pcb-guard" d="M54 0 V800"/>
+      <path class="pcb-pwr" d="M46 0 V800"/>
+      <path class="pcb-sig" d="M32 20 V160 L18 178 V320"/>
+      <path class="pcb-sig pcb-live" d="M32 380 V560 L16 578 V700"/>
+      <path class="pcb-fine" d="M46 80 H24 V110"/>
+      <path class="pcb-fine" d="M46 250 H32"/>
+      <path class="pcb-fine" d="M46 450 H16"/>
+      <path class="pcb-fine" d="M46 720 H24"/>
+      <path class="pcb-ang" d="M18 320 L2 336"/>
+      <path class="pcb-ang" d="M16 578 L2 594"/>
+      <g class="pcb-fingers">
+        <rect x="48" y="280" width="10" height="16"/><rect x="48" y="300" width="10" height="16"/>
+        <rect x="48" y="320" width="10" height="16"/><rect x="48" y="340" width="10" height="16"/>
+        <rect x="48" y="360" width="10" height="16"/><rect x="48" y="380" width="10" height="16"/>
+        <rect x="48" y="400" width="10" height="16"/><rect x="48" y="420" width="10" height="16"/>
+      </g>
+      <path class="pcb-sig" d="M48 288 H46"/>
+      <path class="pcb-sig" d="M48 328 H32 V380"/>
+      <path class="pcb-sig" d="M48 368 H46"/>
+      <path class="pcb-sig" d="M48 408 H32"/>
+      <g class="pcb-pads">
+        <rect x="42" y="170" width="10" height="6"/><rect x="42" y="182" width="10" height="6"/>
+      </g>
+      <text class="pcb-silk" x="8" y="358">J1</text>
+      <text class="pcb-silk" x="6" y="272">GND</text>
+      <use href="#via" x="46" y="80"/><use href="#via" x="46" y="250"/>
+      <use href="#via" x="46" y="450"/><use href="#via" x="46" y="720"/>
+      <use href="#via" x="32" y="20"/><use href="#via" x="18" y="178"/>
+      <use href="#via" x="32" y="380"/><use href="#via" x="16" y="578"/>
+      <use href="#via-sm" x="24" y="110"/><use href="#via-sm" x="24" y="720"/>
+    </svg>
+  </div>
   <div id="noise"></div>
   <div id="scan"></div>
   <div id="crt">
@@ -21,6 +194,10 @@
         </div>
       </div>
       <div class="ticks" aria-hidden="true"></div>
+      <nav class="exfil" aria-label="Grok web surfaces">
+        <a class="exfil-btn" id="btn-imagine" href="https://grok.com/imagine" target="_blank" rel="noopener noreferrer" title="Official Imagine — opens in a new window">IMAGINE</a>
+        <a class="exfil-btn" id="btn-grok" href="https://grok.com" target="_blank" rel="noopener noreferrer" title="Grok web chat — opens in a new window">GROK</a>
+      </nav>
       <div class="link">
         <span class="led" id="led"></span>
         <span id="link-state">STANDBY</span>

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install the Adjutant web console for Grok Build on Debian-based systems.
+# Install the Adjutant web console for Grok Build on Debian-based systems
+# (Debian, Ubuntu, Linux Mint, Kali Linux).
 # Usage:
 #   ./install.sh              # user install to ~/.local  (no root)
 #   ./install.sh --prefix DIR
@@ -7,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 1.0.0)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.1.0)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -52,10 +53,10 @@ elif command -v grok >/dev/null 2>&1; then
 fi
 
 if [[ -z "$AGENT" ]]; then
-  echo "Grok Build is not installed for this user." >&2
-  echo "Install Grok Build first, then run this installer again." >&2
-  echo "Expected: ${HOME}/.grok/bin/agent" >&2
-  exit 1
+  echo "Note: Grok Build is not installed for this user yet."
+  echo "Adjutant UI will still install. The agent console needs ~/.grok/bin/agent;"
+  echo "adjutant --shell works without it."
+  echo
 fi
 
 SHARE="${PREFIX}/share/adjutant-ui"
@@ -115,13 +116,16 @@ echo
 echo "Adjutant UI ${VERSION} installed."
 echo "  command : ${BIN}/adjutant"
 echo "  files   : ${SHARE}"
-echo "  grok    : ${AGENT}"
+echo "  grok    : ${AGENT:-not found (install Grok Build for the agent console)}"
 echo
 echo "Launch:  adjutant"
+echo "Imagine: adjutant --imagine"
 echo "Classic: adjutant --tui"
 echo "Stop:    adjutant --stop"
 echo
-echo "To copy this installer to another Debian machine that already has Grok Build:"
-echo "  tar -C \"$(pwd)/..\" -czf adjutant-ui.tar.gz adjutant-ui"
-echo "  # on the other machine:"
-echo "  tar -xzf adjutant-ui.tar.gz && cd adjutant-ui && ./install.sh"
+echo "Kali / another Debian machine — clone from GitHub:"
+echo "  git clone https://github.com/acequint0/adjutant-ui.git"
+echo "  cd adjutant-ui && git checkout v0.1.0 && ./install.sh"
+echo
+echo "Or one-liner:"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.1.0/packaging/kali-install.sh | bash"

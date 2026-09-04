@@ -815,7 +815,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--shell", action="store_true", help="open a shell instead of grok")
     p.add_argument("--stop", action="store_true", help="stop the background console")
     p.add_argument("--status", action="store_true", help="print console status")
+    p.add_argument("--version", action="store_true", help="print version and exit")
     p.add_argument("--no-browser", action="store_true", help="do not open a window")
+    p.add_argument(
+        "--imagine",
+        action="store_true",
+        help="open grok.com/imagine (official 4-up picker) instead of the console",
+    )
+    p.add_argument(
+        "--grok-web",
+        action="store_true",
+        help="open grok.com chat instead of the console",
+    )
     p.add_argument("--serve", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--bind", default=BIND_DEFAULT)
     p.add_argument("--port", type=int, default=PORT_DEFAULT)
@@ -836,6 +847,11 @@ def main() -> None:
     if args.serve:
         serve_main(args.bind, args.port)
         return
+    if args.version:
+        ver_path = HERE / "VERSION"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.1.0"
+        print(f"adjutant-ui {ver}")
+        return
     if args.stop:
         stop_server()
         return
@@ -845,6 +861,16 @@ def main() -> None:
             print(f"online  pid={state['pid']}  http://{state['bind']}:{state['port']}")
         else:
             print("offline")
+        return
+    if args.imagine:
+        url = "https://grok.com/imagine"
+        open_browser(url)
+        print("IMAGINE  " + url)
+        return
+    if args.grok_web:
+        url = "https://grok.com"
+        open_browser(url)
+        print("GROK  " + url)
         return
 
     use_tui = args.tui or (not has_display() and not args.web)
