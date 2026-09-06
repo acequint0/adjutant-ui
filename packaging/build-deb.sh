@@ -25,6 +25,20 @@ exec python3 "${ADJUTANT_UI_ROOT}/server.py" "$@"
 EOF
 chmod 755 "$DEST/usr/bin/adjutant"
 
+cat > "$DEST/usr/bin/adjutant-ui" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+ADJUTANT="${ADJUTANT:-/usr/bin/adjutant}"
+if command -v wmctrl >/dev/null 2>&1; then
+  if wmctrl -l | grep -qE '[[:space:]]ADJUTANT$'; then
+    wmctrl -F -a ADJUTANT
+    exit 0
+  fi
+fi
+exec "$ADJUTANT" --web
+EOF
+chmod 755 "$DEST/usr/bin/adjutant-ui"
+
 cp www/icons/adjutant.svg "$DEST/usr/share/icons/hicolor/scalable/apps/adjutant.svg"
 
 cat > "$DEST/usr/share/applications/adjutant.desktop" <<'EOF'
@@ -50,7 +64,7 @@ Depends: python3 (>= 3.9)
 Recommends: xdg-utils, chromium | chromium-browser | firefox-esr | firefox | google-chrome-stable
 Maintainer: acequint0 <aceaftercolorado@gmail.com>
 Homepage: https://github.com/acequint0/adjutant-ui
-Description: Adjutant web console for Grok Build (version 0.2.1)
+Description: Adjutant web console for Grok Build (version 0.2.2)
  Local-only web terminal that wraps Grok Build in the Adjutant command
  console. Works on Debian, Ubuntu, Linux Mint, and Kali Linux.
  Grok Build (~/.grok/bin/agent) is required for the agent console;

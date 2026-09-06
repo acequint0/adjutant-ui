@@ -54,7 +54,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.1" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.2" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
