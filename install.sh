@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 0.2.0)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.2.1)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -102,13 +102,37 @@ if [[ ! -f "$CLIP_DIR/adjutant-online.wav" && -f "$HOME/.local/share/adjutant/ad
   :
 fi
 
+# Persist the user-install bin dir on PATH for interactive bash shells.
+if [[ "$SYSTEM" -eq 0 ]]; then
+  BASHRC="${HOME}/.bashrc"
+  MARKER_BEGIN="# >>> adjutant-ui >>>"
+  MARKER_END="# <<< adjutant-ui <<<"
+  if [[ -n "${HOME:-}" ]]; then
+    touch "$BASHRC"
+    if ! grep -Fq "$MARKER_BEGIN" "$BASHRC"; then
+      if [[ "$BIN" == "${HOME}/.local/bin" ]]; then
+        PATH_EXPR='$HOME/.local/bin'
+      else
+        PATH_EXPR="$BIN"
+      fi
+      {
+        echo
+        echo "$MARKER_BEGIN"
+        echo "export PATH=\"${PATH_EXPR}:\$PATH\""
+        echo "$MARKER_END"
+      } >> "$BASHRC"
+      echo
+      echo "Added ${BIN} to PATH in ~/.bashrc"
+    fi
+  fi
+fi
+
 case ":$PATH:" in
   *":${BIN}:"*) ;;
   *)
     echo
-    echo "Note: ${BIN} is not on your PATH."
-    echo "Add this to ~/.bashrc:"
-    echo "  export PATH=\"${BIN}:\$PATH\""
+    echo "Note: ${BIN} is not on your PATH in this shell."
+    echo "Open a new terminal, or run:  export PATH=\"${BIN}:\$PATH\""
     ;;
 esac
 
@@ -125,7 +149,7 @@ echo "Stop:    adjutant --stop"
 echo
 echo "Kali / another Debian machine — clone from GitHub:"
 echo "  git clone https://github.com/acequint0/adjutant-ui.git"
-echo "  cd adjutant-ui && git checkout v0.2.0 && ./install.sh"
+echo "  cd adjutant-ui && git checkout v0.2.1 && ./install.sh"
 echo
 echo "Or one-liner:"
-echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packaging/kali-install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.1/packaging/kali-install.sh | bash"

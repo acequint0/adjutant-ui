@@ -1,4 +1,4 @@
-# Adjutant UI 0.2.0
+# Adjutant UI 0.2.1
 
 Web command console for Grok Build. `adjutant` opens a local browser window that wraps the Grok TUI in a terminal emulator.
 
@@ -17,7 +17,7 @@ sudo apt-get update
 sudo apt-get install -y git python3
 git clone https://github.com/acequint0/adjutant-ui.git
 cd adjutant-ui
-git checkout v0.2.0
+git checkout v0.2.1
 chmod +x install.sh
 ./install.sh
 ```
@@ -33,7 +33,7 @@ git pull
 ### 2. One-liner from GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packaging/kali-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.1/packaging/kali-install.sh | bash
 ```
 
 ### 3. Add GitHub as an apt repository
@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packag
 This points apt at the latest GitHub Release (Packages index + `.deb`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.0/packaging/add-repo.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.1/packaging/add-repo.sh | sudo bash
 ```
 
 Or by hand:
@@ -63,8 +63,8 @@ sudo apt-get install --only-upgrade adjutant-ui
 ### 4. Download the `.deb`
 
 ```bash
-wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.0/adjutant-ui_0.2.0_all.deb
-sudo apt-get install -y ./adjutant-ui_0.2.0_all.deb
+wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.1/adjutant-ui_0.2.1_all.deb
+sudo apt-get install -y ./adjutant-ui_0.2.1_all.deb
 ```
 
 ## Install from this folder (any Debian-based OS)
@@ -87,7 +87,7 @@ Build the Debian package locally:
 
 ```bash
 ./packaging/build-deb.sh
-sudo apt-get install -y ./dist/adjutant-ui_0.2.0_all.deb
+sudo apt-get install -y ./dist/adjutant-ui_0.2.1_all.deb
 ```
 
 ## Use
@@ -115,7 +115,8 @@ The console binds to `127.0.0.1` only.
 
 | Version | Notes |
 |---|---|
-| **0.2.0** | Footer **LLAMAFILE** button. First click starts the local llamafile at `127.0.0.1:8080` and wraps it in a green console. Later clicks bring that session back. |
+| **0.2.1** | User install writes `export PATH="$HOME/.local/bin:$PATH"` into `~/.bashrc` so `adjutant` works in new shells. |
+| 0.2.0 | Footer **LLAMAFILE** button. First click starts the local llamafile at `127.0.0.1:8080` and wraps it in a green console. Later clicks bring that session back. |
 | 0.1.0 | First Kali/Debian release: web terminal, IMAGINE / GROK buttons, HUD, `--shell`, `--tui`. |
 
 ## Sound clip

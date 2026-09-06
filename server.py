@@ -1002,7 +1002,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.0"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.1"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:

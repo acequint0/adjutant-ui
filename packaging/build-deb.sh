@@ -50,7 +50,7 @@ Depends: python3 (>= 3.9)
 Recommends: xdg-utils, chromium | chromium-browser | firefox-esr | firefox | google-chrome-stable
 Maintainer: acequint0 <aceaftercolorado@gmail.com>
 Homepage: https://github.com/acequint0/adjutant-ui
-Description: Adjutant web console for Grok Build (version 0.2)
+Description: Adjutant web console for Grok Build (version 0.2.1)
  Local-only web terminal that wraps Grok Build in the Adjutant command
  console. Works on Debian, Ubuntu, Linux Mint, and Kali Linux.
  Grok Build (~/.grok/bin/agent) is required for the agent console;
