@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 0.2.2)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.2.3)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -68,6 +68,24 @@ mkdir -p "$SHARE" "$BIN" "$APP" "$ICON"
 rm -rf "$SHARE/www"
 cp -a server.py VERSION www "$SHARE/"
 chmod 755 "$SHARE/server.py"
+if [[ -f packaging/sudo-switch.sh ]]; then
+  install -m 0755 packaging/sudo-switch.sh "$SHARE/sudo-switch.sh"
+  if [[ "$(id -u)" -ne 0 ]] && command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+    sudo -n mkdir -p /usr/local/lib/adjutant-ui
+    sudo -n install -m 0755 -o root -g root packaging/sudo-switch.sh /usr/local/lib/adjutant-ui/sudo-switch
+    _user="$(id -un)"
+    _tmp="$(mktemp)"
+    printf '# Managed by Adjutant UI. Do not edit.\n%s ALL=(root) NOPASSWD: /usr/local/lib/adjutant-ui/sudo-switch\n' "$_user" >"$_tmp"
+    chmod 600 "$_tmp"
+    if visudo -c -f "$_tmp" >/dev/null 2>&1; then
+      sudo -n install -m 0440 -o root -g root "$_tmp" /etc/sudoers.d/zz-adjutant-switch
+      echo "Installed sudo NOPASSWD toggle helper."
+    fi
+    rm -f "$_tmp"
+  else
+    echo "Note: sudo toggle helper needs one passwordless sudo to install; the UI can retry later."
+  fi
+fi
 
 cat > "$BIN/adjutant" <<EOF
 #!/usr/bin/env bash
@@ -459,7 +477,7 @@ echo "Stop:    adjutant --stop"
 echo
 echo "Kali / another Debian machine — clone from GitHub:"
 echo "  git clone https://github.com/acequint0/adjutant-ui.git"
-echo "  cd adjutant-ui && git checkout v0.2.2 && ./install.sh"
+echo "  cd adjutant-ui && git checkout v0.2.3 && ./install.sh"
 echo
 echo "Or one-liner:"
-echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.2/packaging/kali-install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.3/packaging/kali-install.sh | bash"

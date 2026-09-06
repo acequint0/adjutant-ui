@@ -16,6 +16,9 @@
   const metaMode = $("meta-mode");
   const metaHost = $("meta-host");
   const subtitle = $("subtitle");
+  const btnSudo = $("btn-sudo");
+  const sudoState = $("sudo-state");
+  const sudoDock = btnSudo && btnSudo.closest(".sudo-dock");
   const btnLlama = $("btn-llamafile");
   const llamaWrap = $("llama-wrap");
   const llamaFrame = $("llama-frame");
@@ -54,7 +57,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.2" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.3" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
@@ -396,6 +399,60 @@
     setLlama(!llamaOn);
   });
 
+  let sudoBusy = false;
+  const paintSudo = (on, err) => {
+    if (!btnSudo) return;
+    btnSudo.setAttribute("aria-checked", on ? "true" : "false");
+    sudoState.textContent = on ? "ON" : "OFF";
+    if (sudoDock) sudoDock.classList.toggle("err", Boolean(err));
+    btnSudo.title = err
+      ? String(err).slice(0, 160)
+      : on
+        ? "Passwordless sudo is on"
+        : "Passwordless sudo is off";
+  };
+
+  const loadSudo = async () => {
+    if (!btnSudo) return;
+    try {
+      const resp = await fetch("/api/sudo", { cache: "no-store" });
+      const meta = await resp.json();
+      paintSudo(Boolean(meta && meta.enabled), meta && meta.error);
+    } catch (err) {
+      paintSudo(false, err && err.message ? err.message : "status failed");
+    }
+  };
+
+  const setSudo = async (on) => {
+    if (!btnSudo || sudoBusy) return;
+    sudoBusy = true;
+    btnSudo.disabled = true;
+    try {
+      const resp = await fetch("/api/sudo", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: on }),
+      });
+      const meta = await resp.json();
+      paintSudo(Boolean(meta && meta.enabled), meta && meta.ok ? "" : meta && meta.error);
+    } catch (err) {
+      paintSudo(!on, err && err.message ? err.message : "toggle failed");
+    } finally {
+      sudoBusy = false;
+      btnSudo.disabled = false;
+    }
+  };
+
+  if (btnSudo) {
+    btnSudo.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const on = btnSudo.getAttribute("aria-checked") === "true";
+      setSudo(!on);
+    });
+  }
+
   const start = async () => {
     await typeLines();
     await new Promise((r) => setTimeout(r, 420));
@@ -411,6 +468,7 @@
       }
     })
     .catch(() => {});
+  loadSudo();
 
   start();
 })();

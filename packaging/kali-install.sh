@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Install Adjutant UI 0.2.2 from GitHub on Kali / Debian / Ubuntu / Mint.
+# Install Adjutant UI 0.2.3 from GitHub on Kali / Debian / Ubuntu / Mint.
 #
 # User install (no root):
-#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.2/packaging/kali-install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.3/packaging/kali-install.sh | bash
 #
 # System-wide:
-#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.2/packaging/kali-install.sh | sudo bash -s -- --system
+#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.3/packaging/kali-install.sh | sudo bash -s -- --system
 set -euo pipefail
 
 REPO="${ADJUTANT_REPO:-https://github.com/acequint0/adjutant-ui.git}"
-REF="${ADJUTANT_REF:-v0.2.2}"
+REF="${ADJUTANT_REF:-v0.2.3}"
 SRC="${ADJUTANT_SRC:-${HOME}/src/adjutant-ui}"
 SYSTEM=0
 PREFIX=""
@@ -73,7 +73,7 @@ chmod +x "$SRC/install.sh"
 "$SRC/install.sh" "${args[@]}"
 
 echo
-echo "Adjutant UI 0.2.2 is installed from $REPO ($REF)."
+echo "Adjutant UI 0.2.3 is installed from $REPO ($REF)."
 echo "On this machine later, pick up GitHub updates with:"
 echo "  ADJUTANT_REF=main $0"
 echo "or:"

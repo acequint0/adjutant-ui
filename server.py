@@ -377,6 +377,19 @@ class ConsoleServer:
         if method == "POST" and path == "/api/llamafile":
             await self._send_json(writer, await asyncio.to_thread(start_llamafile))
             return
+        if method == "GET" and path == "/api/sudo":
+            await self._send_json(writer, await asyncio.to_thread(probe_sudo))
+            return
+        if method == "POST" and path == "/api/sudo":
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except json.JSONDecodeError:
+                await self._send_status(writer, HTTPStatus.BAD_REQUEST)
+                return
+            await self._send_json(
+                writer, await asyncio.to_thread(set_sudo, bool(payload.get("enabled")))
+            )
+            return
         if method == "POST" and path == "/api/session":
             if not self._authorized(headers, query):
                 await self._send_status(writer, HTTPStatus.UNAUTHORIZED)
@@ -823,6 +836,166 @@ def start_llamafile() -> dict[str, Any]:
         }
 
 
+_sudo_lock = threading.Lock()
+SUDO_SWITCH_PATHS = (
+    Path("/usr/local/lib/adjutant-ui/sudo-switch"),
+    Path("/usr/lib/adjutant-ui/sudo-switch"),
+)
+NOPASSWD_ALL_RE = r"^[A-Za-z_][A-Za-z0-9_-]*\s+ALL\s*=\s*\(ALL(:ALL)?\)\s+NOPASSWD:\s*ALL\s*$"
+
+
+def sudo_switch_src() -> Path | None:
+    for p in (
+        HERE / "packaging" / "sudo-switch.sh",
+        HERE / "sudo-switch.sh",
+        Path("/usr/share/adjutant-ui/sudo-switch.sh"),
+        Path.home() / ".local" / "share" / "adjutant-ui" / "sudo-switch.sh",
+    ):
+        if p.is_file():
+            return p
+    return None
+
+
+def sudo_switch_bin() -> Path | None:
+    for p in SUDO_SWITCH_PATHS:
+        if p.is_file() and os.access(p, os.X_OK):
+            return p
+    return None
+
+
+def _sudo_n(cmd: list[str], timeout: float = 8) -> tuple[int, str, str]:
+    import subprocess
+
+    proc = subprocess.run(
+        ["sudo", "-n", *cmd],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def sudo_passwordless() -> bool:
+    code, _, _ = _sudo_n(["true"])
+    return code == 0
+
+
+def ensure_sudo_helper() -> dict[str, Any]:
+    import subprocess
+
+    existing = sudo_switch_bin()
+    if existing is not None:
+        return {"ok": True, "path": str(existing), "installed": False}
+    src = sudo_switch_src()
+    if src is None:
+        return {"ok": False, "error": "sudo-switch helper is not installed"}
+    if not sudo_passwordless():
+        return {
+            "ok": False,
+            "needs_password": True,
+            "error": "sudo needs a password to install the toggle helper",
+        }
+    dest = SUDO_SWITCH_PATHS[0]
+    mkdir = _sudo_n(["mkdir", "-p", str(dest.parent)])
+    if mkdir[0] != 0:
+        return {"ok": False, "error": (mkdir[2] or mkdir[1] or "mkdir failed").strip()}
+    inst = _sudo_n(["install", "-m", "0755", "-o", "root", "-g", "root", str(src), str(dest)])
+    if inst[0] != 0:
+        return {"ok": False, "error": (inst[2] or inst[1] or "install helper failed").strip()}
+    user = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
+    if not user:
+        import pwd
+
+        user = pwd.getpwuid(os.getuid()).pw_name
+    frag = (
+        "# Managed by Adjutant UI. Do not edit.\n"
+        f"{user} ALL=(root) NOPASSWD: {dest}\n"
+    )
+    tmp = _state_dir() / "zz-adjutant-switch.tmp"
+    tmp.write_text(frag)
+    tmp.chmod(0o600)
+    check = subprocess.run(
+        ["visudo", "-c", "-f", str(tmp)],
+        capture_output=True,
+        text=True,
+    )
+    if check.returncode != 0:
+        tmp.unlink(missing_ok=True)
+        return {"ok": False, "error": (check.stderr or check.stdout or "visudo failed").strip()}
+    put = _sudo_n(
+        ["install", "-m", "0440", "-o", "root", "-g", "root", str(tmp), "/etc/sudoers.d/zz-adjutant-switch"]
+    )
+    tmp.unlink(missing_ok=True)
+    if put[0] != 0:
+        return {"ok": False, "error": (put[2] or put[1] or "install sudoers failed").strip()}
+    return {"ok": True, "path": str(dest), "installed": True}
+
+
+def _run_sudo_switch(action: str) -> dict[str, Any]:
+    import subprocess
+
+    helper = sudo_switch_bin()
+    if helper is None:
+        boot = ensure_sudo_helper()
+        if not boot.get("ok"):
+            return {
+                "ok": False,
+                "enabled": sudo_passwordless(),
+                "error": boot.get("error") or "sudo helper missing",
+                "needs_password": bool(boot.get("needs_password")),
+            }
+        helper = Path(str(boot["path"]))
+    env = os.environ.copy()
+    env["ADJUTANT_SUDO_SWITCH"] = str(helper)
+    try:
+        proc = subprocess.run(
+            ["sudo", "-n", str(helper), action],
+            capture_output=True,
+            text=True,
+            timeout=12,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "enabled": sudo_passwordless(), "error": "sudo-switch timed out"}
+    raw = (proc.stdout or "").strip() or (proc.stderr or "").strip()
+    try:
+        data = json.loads(raw.splitlines()[-1])
+        if isinstance(data, dict):
+            data.setdefault("ok", proc.returncode == 0)
+            data.setdefault("enabled", sudo_passwordless())
+            return data
+    except json.JSONDecodeError:
+        pass
+    return {
+        "ok": proc.returncode == 0,
+        "enabled": sudo_passwordless(),
+        "error": raw or f"sudo-switch exited {proc.returncode}",
+    }
+
+
+def probe_sudo() -> dict[str, Any]:
+    enabled = sudo_passwordless()
+    helper = sudo_switch_bin()
+    out: dict[str, Any] = {
+        "ok": True,
+        "enabled": enabled,
+        "helper": str(helper) if helper else None,
+    }
+    if helper is not None:
+        got = _run_sudo_switch("status")
+        out.update({k: v for k, v in got.items() if k in ("enabled", "managed", "user", "error")})
+        out["ok"] = True
+        out["enabled"] = bool(got.get("enabled", enabled))
+    return out
+
+
+def set_sudo(enabled: bool) -> dict[str, Any]:
+    with _sudo_lock:
+        got = _run_sudo_switch("on" if enabled else "off")
+        got["enabled"] = sudo_passwordless() if got.get("ok") else got.get("enabled", sudo_passwordless())
+        return got
+
+
 def post_session(state: dict[str, Any], cwd: str, argv: list[str], mode: str) -> dict[str, Any]:
     import urllib.request
 
@@ -1002,7 +1175,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.2"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.3"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:
