@@ -1,5 +1,7 @@
 # Adjutant UI 0.2.6
 
+**A.UI** is the short name for Adjutant UI in docs and prompts. The two names are the same product. Commands, files, packages, and desktop launchers stay `adjutant` / `adjutant-ui`.
+
 Web command console for Grok Build. `adjutant` opens a local browser window that wraps the Grok TUI in a terminal emulator.
 
 Requires Grok Build for the agent console (`~/.grok/bin/agent`). `adjutant --shell` works without it.
