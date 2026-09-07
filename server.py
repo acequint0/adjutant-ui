@@ -448,6 +448,20 @@ class ConsoleServer:
             url = f"http://{self.bind}:{self.port}/?s={sess.id}"
             await self._send_json(writer, {"id": sess.id, "url": url})
             return
+        if method == "POST" and path == "/api/session/clone":
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except json.JSONDecodeError:
+                await self._send_status(writer, HTTPStatus.BAD_REQUEST)
+                return
+            src = self.sessions.get(str(payload.get("from") or ""))
+            if src is None:
+                await self._send_status(writer, HTTPStatus.NOT_FOUND)
+                return
+            sess = self.create_session(src.cwd, list(src.argv), src.mode)
+            url = f"http://{self.bind}:{self.port}/?s={sess.id}"
+            await self._send_json(writer, {"ok": True, "id": sess.id, "url": url})
+            return
         if method == "GET" and path == "/sound/online.wav":
             wav = clip_path()
             if wav.is_file():
@@ -900,6 +914,18 @@ def sudo_switch_src() -> Path | None:
     return None
 
 
+def sudo_askpass_src() -> Path | None:
+    for p in (
+        HERE / "packaging" / "sudo-askpass.sh",
+        HERE / "sudo-askpass.sh",
+        Path("/usr/share/adjutant-ui/sudo-askpass.sh"),
+        Path.home() / ".local" / "share" / "adjutant-ui" / "sudo-askpass.sh",
+    ):
+        if p.is_file() and os.access(p, os.X_OK):
+            return p
+    return None
+
+
 def sudo_switch_bin() -> Path | None:
     for p in SUDO_SWITCH_PATHS:
         if p.is_file() and os.access(p, os.X_OK):
@@ -953,7 +979,8 @@ def ensure_sudo_helper() -> dict[str, Any]:
         user = pwd.getpwuid(os.getuid()).pw_name
     frag = (
         "# Managed by Adjutant UI. Do not edit.\n"
-        f"{user} ALL=(root) NOPASSWD: {dest}\n"
+        f"{user} ALL=(root) NOPASSWD: {dest} status, {dest} off\n"
+        f"{user} ALL=(root) PASSWD: {dest} on\n"
     )
     tmp = _state_dir() / "zz-adjutant-switch.tmp"
     tmp.write_text(frag)
@@ -975,8 +1002,85 @@ def ensure_sudo_helper() -> dict[str, Any]:
     return {"ok": True, "path": str(dest), "installed": True}
 
 
+def _parse_sudo_switch(proc: Any) -> dict[str, Any]:
+    raw = (proc.stdout or "").strip() or (proc.stderr or "").strip()
+    try:
+        data = json.loads(raw.splitlines()[-1])
+        if isinstance(data, dict):
+            data.setdefault("ok", proc.returncode == 0)
+            data.setdefault("enabled", sudo_passwordless())
+            return data
+    except json.JSONDecodeError:
+        pass
+    err = raw or f"sudo-switch exited {proc.returncode}"
+    low = err.lower()
+    if proc.returncode != 0 and (
+        "password is required" in low
+        or "no password was provided" in low
+        or "sorry, try again" in low
+        or "askpass" in low
+    ):
+        err = "password required to enable passwordless sudo"
+    return {
+        "ok": proc.returncode == 0,
+        "enabled": sudo_passwordless(),
+        "error": err,
+        "needs_password": proc.returncode != 0,
+    }
+
+
+def _run_sudo_switch_identify(src: Path) -> dict[str, Any]:
+    """Enable passwordless sudo only after the user types their password."""
+    import subprocess
+
+    askpass = sudo_askpass_src()
+    if askpass is None:
+        return {
+            "ok": False,
+            "enabled": sudo_passwordless(),
+            "error": "password prompt helper is not installed",
+            "needs_password": True,
+        }
+    helper_dest = str(sudo_switch_bin() or SUDO_SWITCH_PATHS[0])
+    env = os.environ.copy()
+    env["ADJUTANT_SUDO_SWITCH"] = helper_dest
+    env["ADJUTANT_SUDO_SWITCH_SRC"] = str(src)
+    env["SUDO_ASKPASS"] = str(askpass)
+    env.setdefault("DISPLAY", os.environ.get("DISPLAY") or ":0")
+    env["ADJUTANT_ASKPASS_TITLE"] = "ADJUTANT // IDENTIFY"
+    env["ADJUTANT_ASKPASS_TEXT"] = "Enter your password to enable passwordless sudo."
+    try:
+        subprocess.run(["sudo", "-k"], capture_output=True, timeout=5)
+        proc = subprocess.run(
+            ["sudo", "-A", "bash", str(src), "on"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "enabled": sudo_passwordless(),
+            "error": "password prompt timed out",
+            "needs_password": True,
+        }
+    return _parse_sudo_switch(proc)
+
+
 def _run_sudo_switch(action: str) -> dict[str, Any]:
     import subprocess
+
+    if action == "on":
+        src = sudo_switch_src()
+        if src is None:
+            return {
+                "ok": False,
+                "enabled": sudo_passwordless(),
+                "error": "sudo-switch helper is not installed",
+                "needs_password": True,
+            }
+        return _run_sudo_switch_identify(src)
 
     helper = sudo_switch_bin()
     if helper is None:
@@ -1001,20 +1105,7 @@ def _run_sudo_switch(action: str) -> dict[str, Any]:
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "enabled": sudo_passwordless(), "error": "sudo-switch timed out"}
-    raw = (proc.stdout or "").strip() or (proc.stderr or "").strip()
-    try:
-        data = json.loads(raw.splitlines()[-1])
-        if isinstance(data, dict):
-            data.setdefault("ok", proc.returncode == 0)
-            data.setdefault("enabled", sudo_passwordless())
-            return data
-    except json.JSONDecodeError:
-        pass
-    return {
-        "ok": proc.returncode == 0,
-        "enabled": sudo_passwordless(),
-        "error": raw or f"sudo-switch exited {proc.returncode}",
-    }
+    return _parse_sudo_switch(proc)
 
 
 def probe_sudo() -> dict[str, Any]:
@@ -1337,7 +1428,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.5"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.6"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:
@@ -1372,8 +1463,14 @@ def main() -> None:
 
     argv, mode = build_argv(args.shell, rest)
     state = ensure_server(args.bind, args.port)
-    sess = post_session(state, os.getcwd(), argv, mode)
-    url = sess["url"]
+    cwd = os.getcwd()
+    alpha = post_session(state, cwd, argv, mode)
+    beta = post_session(state, cwd, argv, mode)
+    omega = post_session(state, cwd, argv, mode)
+    url = (
+        f"http://{state['bind']}:{state['port']}/"
+        f"?s={alpha['id']}&alpha={alpha['id']}&beta={beta['id']}&omega={omega['id']}"
+    )
     if not args.no_browser:
         open_browser(url)
     print(f"ADJUTANT ONLINE")

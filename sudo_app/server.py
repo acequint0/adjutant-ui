@@ -101,6 +101,30 @@ def health_ok(state: dict[str, Any]) -> bool:
         return False
 
 
+WINDOW_WIDTH = 410
+WINDOW_HEIGHT = 280
+WINDOW_TITLE = "ADJUTANT // NOPASSWD"
+
+
+def _force_window_size() -> None:
+    import subprocess
+
+    if not shutil.which("wmctrl"):
+        return
+    for _ in range(50):
+        time.sleep(0.12)
+        listing = subprocess.run(["wmctrl", "-l"], capture_output=True, text=True)
+        for line in listing.stdout.splitlines():
+            if "NOPASSWD" not in line:
+                continue
+            wid = line.split(None, 1)[0]
+            subprocess.run(
+                ["wmctrl", "-i", "-r", wid, "-e", f"0,-1,-1,{WINDOW_WIDTH},{WINDOW_HEIGHT}"],
+                capture_output=True,
+            )
+            return
+
+
 def open_browser(url: str) -> None:
     chrome = (
         shutil.which("google-chrome")
@@ -111,14 +135,27 @@ def open_browser(url: str) -> None:
     import subprocess
 
     if chrome:
+        profile = _state_dir() / "chrome-profile"
+        profile.mkdir(parents=True, exist_ok=True)
         subprocess.Popen(
-            [chrome, f"--app={url}", "--new-window", "--window-size=820,560"],
+            [
+                chrome,
+                f"--user-data-dir={profile}",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-sync",
+                f"--app={url}",
+                "--new-window",
+                f"--window-size={WINDOW_WIDTH},{WINDOW_HEIGHT}",
+                "--window-position=160,80",
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
             start_new_session=True,
             close_fds=True,
         )
+        threading.Thread(target=_force_window_size, daemon=True).start()
         return
     opener = shutil.which("xdg-open")
     if opener:
@@ -130,10 +167,11 @@ def open_browser(url: str) -> None:
             start_new_session=True,
             close_fds=True,
         )
+        threading.Thread(target=_force_window_size, daemon=True).start()
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "adjutant-sudo/0.2.5"
+    server_version = "adjutant-sudo/0.2.6"
 
     def log_message(self, fmt: str, *args: object) -> None:
         return

@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 0.2.5)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.2.6)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -78,14 +78,19 @@ fi
 if [[ -f packaging/uninstall-sudo-app.sh ]]; then
   install -m 0755 packaging/uninstall-sudo-app.sh "$SHARE/uninstall-sudo-app.sh"
 fi
+if [[ -f packaging/sudo-askpass.sh ]]; then
+  install -m 0755 packaging/sudo-askpass.sh "$SHARE/sudo-askpass.sh"
+fi
 if [[ -f packaging/sudo-switch.sh ]]; then
   install -m 0755 packaging/sudo-switch.sh "$SHARE/sudo-switch.sh"
   if [[ "$(id -u)" -ne 0 ]] && command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
     sudo -n mkdir -p /usr/local/lib/adjutant-ui
     sudo -n install -m 0755 -o root -g root packaging/sudo-switch.sh /usr/local/lib/adjutant-ui/sudo-switch
     _user="$(id -un)"
+    _path="/usr/local/lib/adjutant-ui/sudo-switch"
     _tmp="$(mktemp)"
-    printf '# Managed by Adjutant UI. Do not edit.\n%s ALL=(root) NOPASSWD: /usr/local/lib/adjutant-ui/sudo-switch\n' "$_user" >"$_tmp"
+    printf '# Managed by Adjutant UI. Do not edit.\n%s ALL=(root) NOPASSWD: %s status, %s off\n%s ALL=(root) PASSWD: %s on\n' \
+      "$_user" "$_path" "$_path" "$_user" "$_path" >"$_tmp"
     chmod 600 "$_tmp"
     if visudo -c -f "$_tmp" >/dev/null 2>&1; then
       sudo -n install -m 0440 -o root -g root "$_tmp" /etc/sudoers.d/zz-adjutant-switch
@@ -487,7 +492,7 @@ echo "Stop:    adjutant --stop"
 echo
 echo "Kali / another Debian machine — clone from GitHub:"
 echo "  git clone https://github.com/acequint0/adjutant-ui.git"
-echo "  cd adjutant-ui && git checkout v0.2.5 && ./install.sh"
+echo "  cd adjutant-ui && git checkout v0.2.6 && ./install.sh"
 echo
 echo "Or one-liner:"
-echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.5/packaging/kali-install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.6/packaging/kali-install.sh | bash"

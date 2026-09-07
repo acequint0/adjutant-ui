@@ -7,7 +7,6 @@
   const boot = $("boot");
   const bootLog = $("boot-log");
   const bootHint = $("boot-hint");
-  const termEl = $("term");
   const led = $("led");
   const linkState = $("link-state");
   const metaSize = $("meta-size");
@@ -60,7 +59,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.5" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.6" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
@@ -99,80 +98,143 @@
   const FitAddonCtor =
     (window.FitAddon && window.FitAddon.FitAddon) || window.FitAddon;
 
-  const term = new Terminal({
-    cursorBlink: true,
-    cursorStyle: "block",
-    fontFamily: '"Share Tech Mono", ui-monospace, monospace',
-    fontSize: 15,
-    lineHeight: 1.15,
-    letterSpacing: 0,
-    scrollback: 8000,
-    allowProposedApi: true,
-    theme: {
-      background: "#0a0202",
-      foreground: "#ffd6d6",
-      cursor: "#e22b2b",
-      cursorAccent: "#0a0202",
-      selectionBackground: "#5a1515",
-      selectionForeground: "#ffd6d6",
-      black: "#050000",
-      red: "#e22b2b",
-      green: "#5dffb0",
-      yellow: "#ffb347",
-      blue: "#a07070",
-      magenta: "#e22b2b",
-      cyan: "#ff6a4a",
-      white: "#ffd6d6",
-      brightBlack: "#a07070",
-      brightRed: "#ff6a4a",
-      brightGreen: "#8affc8",
-      brightYellow: "#ffb347",
-      brightBlue: "#e22b2b",
-      brightMagenta: "#ff6a6a",
-      brightCyan: "#ff8f82",
-      brightWhite: "#fff4f4",
-    },
-  });
+  const TERM_THEME = {
+    background: "#0a0202",
+    foreground: "#ffd6d6",
+    cursor: "#e22b2b",
+    cursorAccent: "#0a0202",
+    selectionBackground: "#5a1515",
+    selectionForeground: "#ffd6d6",
+    black: "#050000",
+    red: "#e22b2b",
+    green: "#5dffb0",
+    yellow: "#ffb347",
+    blue: "#a07070",
+    magenta: "#e22b2b",
+    cyan: "#ff6a4a",
+    white: "#ffd6d6",
+    brightBlack: "#a07070",
+    brightRed: "#ff6a4a",
+    brightGreen: "#8affc8",
+    brightYellow: "#ffb347",
+    brightBlue: "#e22b2b",
+    brightMagenta: "#ff6a6a",
+    brightCyan: "#ff8f82",
+    brightWhite: "#fff4f4",
+  };
 
-  const fit = new FitAddonCtor();
-  term.loadAddon(fit);
-  term.open(termEl);
+  const TAB_NAMES = ["alpha", "beta", "omega"];
+  const panes = {};
+  let activeName = "alpha";
+  let openCount = 0;
+  let failCount = 0;
 
-  const fitNow = () => {
+  const tabIds = {
+    alpha: params.get("alpha") || sessionId,
+    beta: params.get("beta") || "",
+    omega: params.get("omega") || "",
+  };
+
+  const activePane = () => panes[activeName];
+
+  const paintTabLink = (name, mode) => {
+    const btn = $("tab-" + name);
+    if (!btn) return;
+    btn.classList.toggle("ok", mode === "ok");
+    btn.classList.toggle("bad", mode === "bad");
+  };
+
+  const applyPaneMeta = (pane) => {
+    if (!pane) return;
+    metaSize.textContent = pane.term.cols + "×" + pane.term.rows;
+    if (pane.cwd) {
+      metaCwd.textContent = pane.cwd;
+      metaCwd.title = pane.cwd;
+    }
+    if (pane.mode) metaMode.textContent = pane.mode;
+  };
+
+  const fitPane = (pane) => {
+    if (!pane) return;
     try {
-      fit.fit();
+      pane.fit.fit();
     } catch {
       return;
     }
-    metaSize.textContent = term.cols + "×" + term.rows;
+    if (pane === activePane()) {
+      metaSize.textContent = pane.term.cols + "×" + pane.term.rows;
+    }
+    if (pane.ws && pane.ws.readyState === WebSocket.OPEN) {
+      pane.ws.send(JSON.stringify({ type: "resize", cols: pane.term.cols, rows: pane.term.rows }));
+    }
   };
 
-  const connect = () => {
-    if (!sessionId) {
-      setLink("bad");
-      boot.classList.add("error");
-      bootHint.textContent = "NO SESSION  //  RUN  adjutant";
+  const showTab = (name) => {
+    if (!TAB_NAMES.includes(name)) return;
+    activeName = name;
+    TAB_NAMES.forEach((n) => {
+      const paneEl = $("pane-" + n);
+      const tabBtn = $("tab-" + n);
+      const on = n === name;
+      if (paneEl) {
+        paneEl.classList.toggle("active", on);
+        paneEl.hidden = !on;
+      }
+      if (tabBtn) tabBtn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    const pane = panes[name];
+    if (pane) {
+      fitPane(pane);
+      if (!llamaOn) pane.term.focus();
+      applyPaneMeta(pane);
+    }
+  };
+
+  const makePane = (name) => {
+    const el = $("term-" + name);
+    const term = new Terminal({
+      cursorBlink: true,
+      cursorStyle: "block",
+      fontFamily: '"Share Tech Mono", ui-monospace, monospace',
+      fontSize: 15,
+      lineHeight: 1.15,
+      letterSpacing: 0,
+      scrollback: 8000,
+      allowProposedApi: true,
+      theme: TERM_THEME,
+    });
+    const fit = new FitAddonCtor();
+    term.loadAddon(fit);
+    term.open(el);
+    const pane = { name, term, fit, ws: null, cwd: "", mode: "" };
+    panes[name] = pane;
+    term.onData((data) => {
+      if (pane.ws && pane.ws.readyState === WebSocket.OPEN) pane.ws.send(data);
+    });
+    return pane;
+  };
+
+  const connectPane = (name, sid) => {
+    const pane = panes[name] || makePane(name);
+    if (!sid) {
+      paintTabLink(name, "bad");
       return;
     }
-
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${location.host}/ws/${sessionId}`);
+    const ws = new WebSocket(`${proto}://${location.host}/ws/${sid}`);
     ws.binaryType = "arraybuffer";
-
-    const sendResize = () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
-      }
-    };
+    pane.ws = ws;
 
     ws.onopen = () => {
-      setLink("ok");
-      bootHint.textContent = "CHANNEL OPEN";
-      fitNow();
-      sendResize();
-      boot.classList.add("done");
-      termEl.classList.add("live");
-      term.focus();
+      openCount += 1;
+      paintTabLink(name, "ok");
+      if (openCount === 1) {
+        setLink("ok");
+        bootHint.textContent = "CHANNEL OPEN";
+        boot.classList.add("done");
+      }
+      fitPane(pane);
+      if (name === activeName && !llamaOn) pane.term.focus();
     };
 
     ws.onmessage = (ev) => {
@@ -180,48 +242,108 @@
         try {
           const msg = JSON.parse(ev.data);
           if (msg.type === "meta") {
-            if (msg.cwd) {
-              metaCwd.textContent = msg.cwd;
-              metaCwd.title = msg.cwd;
-            }
-            if (msg.mode) metaMode.textContent = msg.mode;
+            if (msg.cwd) pane.cwd = msg.cwd;
+            if (msg.mode) pane.mode = msg.mode;
+            if (name === activeName && !llamaOn) applyPaneMeta(pane);
           } else if (msg.type === "exit") {
-            setLink("bad");
-            linkState.textContent = "ENDED " + (msg.code ?? "");
+            paintTabLink(name, "bad");
+            if (name === activeName) {
+              setLink("bad");
+              linkState.textContent = "ENDED " + (msg.code ?? "");
+            }
           }
         } catch {
-          term.write(ev.data);
+          pane.term.write(ev.data);
         }
         return;
       }
-      term.write(new Uint8Array(ev.data));
+      pane.term.write(new Uint8Array(ev.data));
     };
 
     ws.onclose = () => {
-      setLink("bad");
+      paintTabLink(name, "bad");
+      if (name === activeName) setLink("bad");
     };
 
     ws.onerror = () => {
+      failCount += 1;
+      paintTabLink(name, "bad");
+      if (name === activeName) setLink("bad");
+      if (openCount === 0 && failCount >= TAB_NAMES.length) {
+        boot.classList.add("error");
+        bootHint.textContent = "COMM-LINK FAILED";
+      }
+    };
+  };
+
+  const cloneSession = async (fromId) => {
+    const resp = await fetch("/api/session/clone", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: fromId }),
+    });
+    if (!resp.ok) throw new Error("clone failed");
+    const meta = await resp.json();
+    if (!meta || !meta.id) throw new Error("clone returned no id");
+    return meta.id;
+  };
+
+  const ensureTabIds = async () => {
+    const seed = tabIds.alpha;
+    if (!seed) return;
+    for (const name of ["beta", "omega"]) {
+      if (tabIds[name]) continue;
+      try {
+        tabIds[name] = await cloneSession(seed);
+      } catch {
+        tabIds[name] = "";
+      }
+    }
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("s", tabIds.alpha);
+      u.searchParams.set("alpha", tabIds.alpha);
+      if (tabIds.beta) u.searchParams.set("beta", tabIds.beta);
+      if (tabIds.omega) u.searchParams.set("omega", tabIds.omega);
+      history.replaceState({}, "", u);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const connect = async () => {
+    TAB_NAMES.forEach(makePane);
+    if (!tabIds.alpha) {
       setLink("bad");
       boot.classList.add("error");
-      bootHint.textContent = "COMM-LINK FAILED";
-    };
-
-    term.onData((data) => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(data);
-    });
-
-    window.addEventListener("resize", () => {
-      fitNow();
-      sendResize();
-    });
-
-    document.addEventListener("click", (ev) => {
-      if (llamaOn) return;
-      if (ev.target.closest("a, button, nav, input, textarea, iframe, #sudo-prompt")) return;
-      term.focus();
-    });
+      bootHint.textContent = "NO SESSION  //  RUN  adjutant";
+      return;
+    }
+    await ensureTabIds();
+    TAB_NAMES.forEach((name) => connectPane(name, tabIds[name]));
+    showTab("alpha");
   };
+
+  document.querySelectorAll(".chan-tab").forEach((btn) => {
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (llamaOn) return;
+      showTab(btn.getAttribute("data-tab"));
+    });
+  });
+
+  window.addEventListener("resize", () => {
+    fitPane(activePane());
+  });
+
+  document.addEventListener("click", (ev) => {
+    if (llamaOn) return;
+    if (ev.target.closest("a, button, nav, input, textarea, iframe, #sudo-prompt")) return;
+    const pane = activePane();
+    if (pane) pane.term.focus();
+  });
 
   const openPortal = (url, name) => {
     const width = Math.min(1440, Math.max(900, Math.round(screen.availWidth * 0.68)));
@@ -317,7 +439,8 @@
       llamaWrap.classList.remove("offline", "starting");
       metaMode.textContent = modeBeforeLlama;
       setLink(grokLink || "");
-      term.focus();
+      const pane = activePane();
+      if (pane) pane.term.focus();
       return;
     }
 
@@ -568,7 +691,7 @@
   const start = async () => {
     await typeLines();
     await new Promise((r) => setTimeout(r, 420));
-    connect();
+    await connect();
   };
 
   fetch("/api/meta")

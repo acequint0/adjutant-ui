@@ -118,6 +118,22 @@ def main() -> None:
             assert "btn-llamafile" in html
             assert "llama-frame" in html
             assert "127.0.0.1:8080" in html
+            assert "tab-alpha" in html
+            assert "tab-beta" in html
+            assert "tab-omega" in html
+            assert "term-alpha" in html
+
+            clone_req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/api/session/clone",
+                data=json.dumps({"from": sid}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(clone_req, timeout=3) as resp:
+                cloned = json.loads(resp.read().decode())
+            assert cloned.get("ok") is True
+            assert cloned.get("id")
+            assert cloned["id"] != sid
 
             with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/llamafile", timeout=3) as resp:
                 llama = json.loads(resp.read().decode())

@@ -43,13 +43,23 @@ write_validated() {
   rm -f "$tmp"
 }
 
+install_helper_from_src() {
+  local src="${ADJUTANT_SUDO_SWITCH_SRC:-}"
+  [[ -n "$src" && -f "$src" ]] || return 0
+  mkdir -p "$(dirname "$HELPER")"
+  install -m 0755 -o root -g root "$src" "$HELPER"
+}
+
 ensure_switch_rule() {
   local path body
   path="$HELPER"
   [[ -x "$path" ]] || path="/usr/lib/adjutant-ui/sudo-switch"
   [[ -x "$path" ]] || return 0
+  # Enabling passwordless sudo always requires the user's password.
+  # Turning it off, and reading status, stay passwordless.
   body="# Managed by Adjutant UI. Do not edit.
-${USER_NAME} ALL=(root) NOPASSWD: ${path}"
+${USER_NAME} ALL=(root) NOPASSWD: ${path} status, ${path} off
+${USER_NAME} ALL=(root) PASSWD: ${path} on"
   write_validated "$SWITCH" "$body"
 }
 
@@ -100,6 +110,7 @@ case "$CMD" in
     emit_status
     ;;
   on)
+    install_helper_from_src
     restore_stashed
     write_validated "$DROPIN" "# Managed by Adjutant UI. Do not edit.
 ${USER_NAME} ALL=(ALL:ALL) NOPASSWD: ALL"

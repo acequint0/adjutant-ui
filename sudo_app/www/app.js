@@ -31,7 +31,7 @@
       ? String(err).slice(0, 180)
       : on
         ? "SUDO WILL NOT ASK FOR A PASSWORD"
-        : "SUDO WILL ASK FOR A PASSWORD";
+        : "TURN ON REQUIRES YOUR PASSWORD // TURN OFF DOES NOT";
     btn.title = err ? String(err).slice(0, 160) : on ? "Passwordless sudo is on" : "Passwordless sudo is off";
   };
 
@@ -49,6 +49,7 @@
     if (busy) return;
     busy = true;
     btn.disabled = true;
+    if (on) hint.textContent = "IDENTIFY WITH YOUR PASSWORD";
     try {
       const resp = await fetch("/api/sudo", {
         method: "POST",

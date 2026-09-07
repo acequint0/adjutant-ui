@@ -22,6 +22,12 @@ def test_ui_assets() -> None:
     css = (ROOT / "www" / "app.css").read_text()
     js = (ROOT / "www" / "app.js").read_text()
     assert 'id="btn-sudo"' in html
+    assert 'id="tab-alpha"' in html
+    assert 'id="tab-beta"' in html
+    assert 'id="tab-omega"' in html
+    assert 'id="term-alpha"' in html
+    assert 'id="term-beta"' in html
+    assert 'id="term-omega"' in html
     assert 'id="sudo-prompt"' in html
     assert 'id="sudo-app-uninstall"' in html
     assert 'class="switch"' in html
@@ -32,12 +38,30 @@ def test_ui_assets() -> None:
     assert 'role="switch"' in html
     assert "/api/sudo" in js
     assert "/api/sudo-app" in js
+    assert "/api/session/clone" in js
+    assert 'TAB_NAMES = ["alpha", "beta", "omega"]' in js
+    assert ".chan-tabs" in css
+    assert ".chan-tab" in css
     assert 'magenta: "#e22b2b"' in js
     assert "aria-checked" in js
     app_html = (ROOT / "sudo_app" / "www" / "index.html").read_text()
     assert "UNINSTALL NOPASSWD UTILITY" in app_html
     assert (ROOT / "packaging" / "install-sudo-app.sh").is_file()
     assert (ROOT / "packaging" / "uninstall-sudo-app.sh").is_file()
+    assert (ROOT / "packaging" / "sudo-askpass.sh").is_file()
+    sudo_js = (ROOT / "sudo_app" / "www" / "app.js").read_text()
+    assert "IDENTIFY WITH YOUR PASSWORD" in sudo_js
+    sudo_srv = (ROOT / "sudo_app" / "server.py").read_text()
+    assert "WINDOW_WIDTH = 410" in sudo_srv
+    assert "WINDOW_HEIGHT = 280" in sudo_srv
+    assert "--window-size=820,560" not in sudo_srv
+    helper = (ROOT / "packaging" / "sudo-switch.sh").read_text()
+    assert "PASSWD:" in helper
+    assert "sudo-switch off" in helper or "off" in helper
+    assert "NOPASSWD: ${path} status, ${path} off" in helper
+    ctl_src = (ROOT / "server.py").read_text()
+    assert '["sudo", "-A", "bash"' in ctl_src
+    assert '["sudo", "-k"]' in ctl_src
 
 
 def test_nopasswd_line_re() -> None:
@@ -59,6 +83,24 @@ def test_visudo_fragment() -> None:
         assert proc.returncode == 0, proc.stderr or proc.stdout
     finally:
         os.unlink(path)
+
+
+def test_visudo_switch_rule() -> None:
+    path = "/usr/local/lib/adjutant-ui/sudo-switch"
+    body = (
+        "# Managed by Adjutant UI. Do not edit.\n"
+        f"ace ALL=(root) NOPASSWD: {path} status, {path} off\n"
+        f"ace ALL=(root) PASSWD: {path} on\n"
+    )
+    with tempfile.NamedTemporaryFile("w", delete=False) as fh:
+        fh.write(body)
+        frag = fh.name
+    try:
+        os.chmod(frag, 0o440)
+        proc = subprocess.run(["visudo", "-c", "-f", frag], capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stderr or proc.stdout
+    finally:
+        os.unlink(frag)
 
 
 def test_helper_refuses_non_root() -> None:
@@ -97,6 +139,7 @@ if __name__ == "__main__":
         test_ui_assets,
         test_nopasswd_line_re,
         test_visudo_fragment,
+        test_visudo_switch_rule,
         test_helper_refuses_non_root,
         test_probe_sudo_shape,
         test_sudo_app_status_shape,

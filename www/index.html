@@ -210,8 +210,27 @@
         <span class="corner tr"></span>
         <span class="corner bl"></span>
         <span class="corner br"></span>
+        <nav class="chan-tabs" role="tablist" aria-label="Grok terminals">
+          <button type="button" class="chan-tab" role="tab" id="tab-alpha" data-tab="alpha" aria-controls="pane-alpha" aria-selected="true">
+            <span class="tab-led" aria-hidden="true"></span>ALPHA
+          </button>
+          <button type="button" class="chan-tab" role="tab" id="tab-beta" data-tab="beta" aria-controls="pane-beta" aria-selected="false">
+            <span class="tab-led" aria-hidden="true"></span>BETA
+          </button>
+          <button type="button" class="chan-tab" role="tab" id="tab-omega" data-tab="omega" aria-controls="pane-omega" aria-selected="false">
+            <span class="tab-led" aria-hidden="true"></span>OMEGA
+          </button>
+        </nav>
         <div id="term-wrap">
-          <div id="term"></div>
+          <div class="term-pane active" id="pane-alpha" data-tab="alpha" role="tabpanel" aria-labelledby="tab-alpha">
+            <div class="term" id="term-alpha"></div>
+          </div>
+          <div class="term-pane" id="pane-beta" data-tab="beta" role="tabpanel" aria-labelledby="tab-beta" hidden>
+            <div class="term" id="term-beta"></div>
+          </div>
+          <div class="term-pane" id="pane-omega" data-tab="omega" role="tabpanel" aria-labelledby="tab-omega" hidden>
+            <div class="term" id="term-omega"></div>
+          </div>
           <div id="boot">
             <pre id="boot-log"></pre>
             <div id="boot-hint">AWAITING COMM-LINK</div>

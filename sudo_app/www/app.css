@@ -33,7 +33,7 @@ html, body {
 }
 
 body {
-  padding: 28px 32px 24px;
+  padding: 8px 10px 6px;
   background: #050000;
 }
 
@@ -43,8 +43,8 @@ body {
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;
-  padding: 10px 12px 8px;
-  gap: 10px;
+  padding: 4px 6px 4px;
+  gap: 4px;
   background:
     radial-gradient(900px 500px at 50% -10%, rgba(226, 43, 43, 0.08), transparent 60%),
     linear-gradient(180deg, #0a0202 0%, #050000 100%);
@@ -57,9 +57,9 @@ body {
 header#top, footer#bottom {
   display: flex;
   align-items: center;
-  gap: 18px;
-  min-height: 46px;
-  padding: 0 6px;
+  gap: 10px;
+  min-height: 28px;
+  padding: 0 4px;
   border-bottom: 1px solid var(--line-dim);
   user-select: none;
 }
@@ -67,9 +67,9 @@ header#top, footer#bottom {
 footer#bottom {
   border-bottom: 0;
   border-top: 1px solid var(--line-dim);
-  min-height: 32px;
+  min-height: 22px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -84,16 +84,16 @@ footer#bottom {
   box-shadow: var(--glow);
 }
 .title {
-  font-size: 20px;
-  letter-spacing: 0.34em;
+  font-size: 13px;
+  letter-spacing: 0.28em;
   line-height: 1;
   color: var(--red);
   text-shadow: var(--glow);
 }
 .subtitle {
-  margin-top: 4px;
-  font-size: 10px;
-  letter-spacing: 0.28em;
+  margin-top: 2px;
+  font-size: 8px;
+  letter-spacing: 0.22em;
   color: var(--muted);
 }
 .ticks {
@@ -141,28 +141,28 @@ main { min-height: 0; padding: 2px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 8px;
   text-align: center;
-  padding: 8%;
+  padding: 4%;
 }
 .stage-kicker {
   color: var(--red);
-  letter-spacing: 0.34em;
-  font-size: 14px;
+  letter-spacing: 0.28em;
+  font-size: 11px;
   text-shadow: var(--glow);
 }
 .stage-hint {
   color: var(--muted);
-  letter-spacing: 0.16em;
-  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-size: 9px;
   max-width: 36em;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 .grow { flex: 1; }
 .sep { opacity: 0.35; padding: 0 6px; }
 
 .sudo-dock { display: flex; align-items: center; gap: 10px; }
-.sudo-dock.large { gap: 16px; transform: scale(1.35); }
+.sudo-dock.large { gap: 10px; transform: none; }
 .sudo-tag { color: var(--muted); font-size: 11px; letter-spacing: 0.22em; }
 
 .switch {

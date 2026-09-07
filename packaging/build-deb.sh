@@ -23,6 +23,7 @@ chmod 755 "$DEST/usr/share/adjutant-ui/server.py"
 mkdir -p "$DEST/usr/lib/adjutant-ui"
 install -m 0755 packaging/sudo-switch.sh "$DEST/usr/lib/adjutant-ui/sudo-switch"
 install -m 0755 packaging/sudo-switch.sh "$DEST/usr/share/adjutant-ui/sudo-switch.sh"
+install -m 0755 packaging/sudo-askpass.sh "$DEST/usr/share/adjutant-ui/sudo-askpass.sh"
 
 cat > "$DEST/usr/bin/adjutant" <<'EOF'
 #!/usr/bin/env bash
@@ -70,7 +71,7 @@ Depends: python3 (>= 3.9)
 Recommends: xdg-utils, chromium | chromium-browser | firefox-esr | firefox | google-chrome-stable
 Maintainer: acequint0 <aceaftercolorado@gmail.com>
 Homepage: https://github.com/acequint0/adjutant-ui
-Description: Adjutant web console for Grok Build (version 0.2.5)
+Description: Adjutant web console for Grok Build (version 0.2.6)
  Local-only web terminal that wraps Grok Build in the Adjutant command
  console. Works on Debian, Ubuntu, Linux Mint, and Kali Linux.
  Grok Build (~/.grok/bin/agent) is required for the agent console;
