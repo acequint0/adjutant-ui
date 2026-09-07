@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Add GitHub Releases as an apt source and install adjutant-ui.
 # Run as root on Kali / Debian / Ubuntu / Mint:
-#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.3/packaging/add-repo.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packaging/add-repo.sh | sudo bash
 set -euo pipefail
 
 if [[ "$(id -u)" -ne 0 ]]; then

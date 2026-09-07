@@ -23,6 +23,20 @@ if command -v adjutant >/dev/null 2>&1; then
   adjutant --stop >/dev/null 2>&1 || true
 fi
 
+if [[ -x "${PREFIX}/share/adjutant-ui/uninstall-sudo-app.sh" ]]; then
+  PREFIX="$PREFIX" "${PREFIX}/share/adjutant-ui/uninstall-sudo-app.sh" >/dev/null 2>&1 || true
+elif [[ -x "$(dirname "$0")/packaging/uninstall-sudo-app.sh" ]]; then
+  PREFIX="$PREFIX" "$(dirname "$0")/packaging/uninstall-sudo-app.sh" >/dev/null 2>&1 || true
+fi
+if [[ -x "${PREFIX}/bin/adjutant-sudo" ]]; then
+  "${PREFIX}/bin/adjutant-sudo" --stop >/dev/null 2>&1 || true
+fi
+rm -rf "${PREFIX}/share/adjutant-sudo"
+rm -f "${PREFIX}/bin/adjutant-sudo"
+rm -f "${PREFIX}/share/applications/adjutant-sudo.desktop"
+rm -f "${PREFIX}/share/icons/hicolor/scalable/apps/adjutant-sudo.svg"
+rm -f "${XDG_DESKTOP_DIR:-$HOME/Desktop}/adjutant-sudo.desktop"
+
 rm -rf "${PREFIX}/share/adjutant-ui"
 rm -f "${PREFIX}/bin/adjutant"
 rm -f "${PREFIX}/bin/adjutant-ui"

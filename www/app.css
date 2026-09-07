@@ -479,6 +479,72 @@ main {
   color: var(--danger);
 }
 
+#sudo-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 0, 0, 0.72);
+  padding: 8%;
+}
+
+#sudo-prompt:not([hidden]) {
+  display: flex;
+}
+
+.sudo-prompt-card {
+  max-width: 36em;
+  padding: 28px 32px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(226, 43, 43, 0.08), #0a0202 40%);
+  box-shadow: var(--glow), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+.sudo-prompt-title {
+  color: var(--red);
+  letter-spacing: 0.28em;
+  font-size: 14px;
+  text-shadow: var(--glow);
+}
+
+.sudo-prompt-body {
+  margin: 16px 0 22px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  line-height: 1.7;
+  text-transform: none;
+}
+
+.sudo-prompt-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.foot-link {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.foot-link:hover,
+.foot-link:focus-visible {
+  color: var(--red);
+  text-shadow: var(--glow);
+  outline: none;
+}
+
 .dock-btn {
   appearance: none;
   font: inherit;

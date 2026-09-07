@@ -22,13 +22,21 @@ def test_ui_assets() -> None:
     css = (ROOT / "www" / "app.css").read_text()
     js = (ROOT / "www" / "app.js").read_text()
     assert 'id="btn-sudo"' in html
+    assert 'id="sudo-prompt"' in html
+    assert 'id="sudo-app-uninstall"' in html
     assert 'class="switch"' in html
     assert "NOPASSWD" in html
     assert ".switch-track" in css
     assert ".switch-knob" in css
+    assert ".foot-link" in css
     assert 'role="switch"' in html
     assert "/api/sudo" in js
+    assert "/api/sudo-app" in js
     assert "aria-checked" in js
+    app_html = (ROOT / "sudo_app" / "www" / "index.html").read_text()
+    assert "UNINSTALL NOPASSWD UTILITY" in app_html
+    assert (ROOT / "packaging" / "install-sudo-app.sh").is_file()
+    assert (ROOT / "packaging" / "uninstall-sudo-app.sh").is_file()
 
 
 def test_nopasswd_line_re() -> None:
@@ -66,6 +74,13 @@ def test_probe_sudo_shape() -> None:
     assert isinstance(got["enabled"], bool)
 
 
+def test_sudo_app_status_shape() -> None:
+    got = mod.sudo_app_status()
+    assert got["ok"] is True
+    assert "installed" in got
+    assert "declined" in got
+
+
 if __name__ == "__main__":
     tests = [
         test_ui_assets,
@@ -73,6 +88,7 @@ if __name__ == "__main__":
         test_visudo_fragment,
         test_helper_refuses_non_root,
         test_probe_sudo_shape,
+        test_sudo_app_status_shape,
     ]
     for fn in tests:
         fn()

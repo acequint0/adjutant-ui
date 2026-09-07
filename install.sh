@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 0.2.3)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.2.4)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -68,6 +68,16 @@ mkdir -p "$SHARE" "$BIN" "$APP" "$ICON"
 rm -rf "$SHARE/www"
 cp -a server.py VERSION www "$SHARE/"
 chmod 755 "$SHARE/server.py"
+if [[ -d sudo_app ]]; then
+  rm -rf "$SHARE/sudo_app"
+  cp -a sudo_app "$SHARE/"
+fi
+if [[ -f packaging/install-sudo-app.sh ]]; then
+  install -m 0755 packaging/install-sudo-app.sh "$SHARE/install-sudo-app.sh"
+fi
+if [[ -f packaging/uninstall-sudo-app.sh ]]; then
+  install -m 0755 packaging/uninstall-sudo-app.sh "$SHARE/uninstall-sudo-app.sh"
+fi
 if [[ -f packaging/sudo-switch.sh ]]; then
   install -m 0755 packaging/sudo-switch.sh "$SHARE/sudo-switch.sh"
   if [[ "$(id -u)" -ne 0 ]] && command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
@@ -477,7 +487,7 @@ echo "Stop:    adjutant --stop"
 echo
 echo "Kali / another Debian machine — clone from GitHub:"
 echo "  git clone https://github.com/acequint0/adjutant-ui.git"
-echo "  cd adjutant-ui && git checkout v0.2.3 && ./install.sh"
+echo "  cd adjutant-ui && git checkout v0.2.4 && ./install.sh"
 echo
 echo "Or one-liner:"
-echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.3/packaging/kali-install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packaging/kali-install.sh | bash"

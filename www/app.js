@@ -19,6 +19,9 @@
   const btnSudo = $("btn-sudo");
   const sudoState = $("sudo-state");
   const sudoDock = btnSudo && btnSudo.closest(".sudo-dock");
+  const sudoPrompt = $("sudo-prompt");
+  const sudoUninstall = $("sudo-app-uninstall");
+  const sudoUnSep = document.querySelector(".sudo-un-sep");
   const btnLlama = $("btn-llamafile");
   const llamaWrap = $("llama-wrap");
   const llamaFrame = $("llama-frame");
@@ -57,7 +60,7 @@
   setInterval(tick, 1000);
 
   const lines = [
-    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.3" },
+    { at: 60, text: "UED COMMAND INTERFACE  //  REV 0.2.4" },
     { at: 220, text: "COMMS ARRAY ............... READY" },
     { at: 380, text: "AUTH TOKEN ................ LOCAL-ONLY" },
     { at: 540, text: "PTY ALLOCATOR ............. OK" },
@@ -214,7 +217,7 @@
 
     document.addEventListener("click", (ev) => {
       if (llamaOn) return;
-      if (ev.target.closest("a, button, nav, input, textarea, iframe")) return;
+      if (ev.target.closest("a, button, nav, input, textarea, iframe, #sudo-prompt")) return;
       term.focus();
     });
   };
@@ -400,6 +403,14 @@
   });
 
   let sudoBusy = false;
+  let sudoAppInstalled = false;
+  let sudoAppDeclined = false;
+
+  const showSudoUninstall = (on) => {
+    if (sudoUninstall) sudoUninstall.hidden = !on;
+    if (sudoUnSep) sudoUnSep.hidden = !on;
+  };
+
   const paintSudo = (on, err) => {
     if (!btnSudo) return;
     btnSudo.setAttribute("aria-checked", on ? "true" : "false");
@@ -407,9 +418,11 @@
     if (sudoDock) sudoDock.classList.toggle("err", Boolean(err));
     btnSudo.title = err
       ? String(err).slice(0, 160)
-      : on
-        ? "Passwordless sudo is on"
-        : "Passwordless sudo is off";
+      : sudoAppInstalled
+        ? "Open NOPASSWD utility"
+        : on
+          ? "Passwordless sudo is on"
+          : "Passwordless sudo is off";
   };
 
   const loadSudo = async () => {
@@ -421,6 +434,29 @@
     } catch (err) {
       paintSudo(false, err && err.message ? err.message : "status failed");
     }
+  };
+
+  const loadSudoApp = async () => {
+    try {
+      const resp = await fetch("/api/sudo-app", { cache: "no-store" });
+      const meta = await resp.json();
+      sudoAppInstalled = Boolean(meta && meta.installed);
+      sudoAppDeclined = Boolean(meta && meta.declined);
+      showSudoUninstall(sudoAppInstalled);
+    } catch {
+      sudoAppInstalled = false;
+      showSudoUninstall(false);
+    }
+  };
+
+  const sudoAppAction = async (action) => {
+    const resp = await fetch("/api/sudo-app", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    return resp.json();
   };
 
   const setSudo = async (on) => {
@@ -444,12 +480,87 @@
     }
   };
 
+  const openSudoPrompt = (on) => {
+    if (!sudoPrompt) return;
+    sudoPrompt.hidden = false;
+  };
+
+  const closeSudoPrompt = () => {
+    if (sudoPrompt) sudoPrompt.hidden = true;
+  };
+
   if (btnSudo) {
-    btnSudo.addEventListener("click", (ev) => {
+    btnSudo.addEventListener("click", async (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
+      if (sudoBusy) return;
+      if (sudoAppInstalled) {
+        try {
+          await sudoAppAction("launch");
+        } catch (err) {
+          paintSudo(btnSudo.getAttribute("aria-checked") === "true", err && err.message);
+        }
+        return;
+      }
+      if (!sudoAppDeclined) {
+        openSudoPrompt();
+        return;
+      }
       const on = btnSudo.getAttribute("aria-checked") === "true";
       setSudo(!on);
+    });
+  }
+
+  const yesBtn = $("sudo-prompt-yes");
+  const noBtn = $("sudo-prompt-no");
+  if (yesBtn) {
+    yesBtn.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      yesBtn.disabled = true;
+      try {
+        const meta = await sudoAppAction("install");
+        sudoAppInstalled = Boolean(meta && meta.ok && meta.installed);
+        sudoAppDeclined = false;
+        showSudoUninstall(sudoAppInstalled);
+        closeSudoPrompt();
+        if (!sudoAppInstalled) {
+          paintSudo(btnSudo && btnSudo.getAttribute("aria-checked") === "true", meta && meta.error);
+        }
+      } catch (err) {
+        paintSudo(false, err && err.message ? err.message : "install failed");
+      } finally {
+        yesBtn.disabled = false;
+      }
+    });
+  }
+  if (noBtn) {
+    noBtn.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeSudoPrompt();
+      try {
+        await sudoAppAction("decline");
+        sudoAppDeclined = true;
+      } catch {
+        sudoAppDeclined = true;
+      }
+    });
+  }
+  if (sudoUninstall) {
+    sudoUninstall.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (!confirm("Remove the NOPASSWD desktop utility? Adjutant stays installed.")) return;
+      try {
+        await sudoAppAction("uninstall");
+        sudoAppInstalled = false;
+        sudoAppDeclined = false;
+        showSudoUninstall(false);
+        await loadSudo();
+      } catch (err) {
+        paintSudo(btnSudo.getAttribute("aria-checked") === "true", err && err.message);
+      }
     });
   }
 
@@ -468,7 +579,10 @@
       }
     })
     .catch(() => {});
+  loadSudoApp();
   loadSudo();
+  setInterval(loadSudo, 2000);
+  setInterval(loadSudoApp, 4000);
 
   start();
 })();

@@ -216,6 +216,19 @@
             <pre id="boot-log"></pre>
             <div id="boot-hint">AWAITING COMM-LINK</div>
           </div>
+          <div id="sudo-prompt" hidden role="dialog" aria-labelledby="sudo-prompt-title">
+            <div class="sudo-prompt-card">
+              <div class="sudo-prompt-title" id="sudo-prompt-title">INSTALL NOPASSWD UTILITY</div>
+              <div class="sudo-prompt-body">
+                Install a separate desktop app to control passwordless sudo?
+                After install, this switch opens that app and follows its on/off state.
+              </div>
+              <div class="sudo-prompt-actions">
+                <button type="button" id="sudo-prompt-yes" class="dock-btn">INSTALL</button>
+                <button type="button" id="sudo-prompt-no" class="dock-btn">NOT NOW</button>
+              </div>
+            </div>
+          </div>
           <div id="llama-wrap" hidden>
             <iframe
               id="llama-frame"
@@ -248,6 +261,10 @@
         </button>
       </div>
       <span class="sep">/</span>
+      <button type="button" id="sudo-app-uninstall" class="foot-link" hidden title="Remove only the NOPASSWD desktop utility">
+        UNINSTALL NOPASSWD
+      </button>
+      <span class="sep sudo-un-sep" hidden>/</span>
       <button type="button" id="btn-llamafile" class="dock-btn" aria-pressed="false" title="Wrap local llamafile at 127.0.0.1:8080">
         LLAMAFILE
       </button>

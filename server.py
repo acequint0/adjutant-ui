@@ -390,6 +390,18 @@ class ConsoleServer:
                 writer, await asyncio.to_thread(set_sudo, bool(payload.get("enabled")))
             )
             return
+        if method == "GET" and path == "/api/sudo-app":
+            await self._send_json(writer, await asyncio.to_thread(sudo_app_status))
+            return
+        if method == "POST" and path == "/api/sudo-app":
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except json.JSONDecodeError:
+                await self._send_status(writer, HTTPStatus.BAD_REQUEST)
+                return
+            action = str(payload.get("action") or "")
+            await self._send_json(writer, await asyncio.to_thread(sudo_app_action, action))
+            return
         if method == "POST" and path == "/api/session":
             if not self._authorized(headers, query):
                 await self._send_status(writer, HTTPStatus.UNAUTHORIZED)
@@ -996,6 +1008,124 @@ def set_sudo(enabled: bool) -> dict[str, Any]:
         return got
 
 
+def sudo_app_marker() -> Path:
+    return _state_dir() / "sudo-app.json"
+
+
+def sudo_app_launcher() -> Path | None:
+    for p in (
+        Path.home() / ".local" / "bin" / "adjutant-sudo",
+        Path("/usr/local/bin/adjutant-sudo"),
+        Path("/usr/bin/adjutant-sudo"),
+    ):
+        if p.is_file() and os.access(p, os.X_OK):
+            return p
+    found = shutil.which("adjutant-sudo")
+    return Path(found) if found else None
+
+
+def _read_sudo_app_marker() -> dict[str, Any]:
+    p = sudo_app_marker()
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text())
+        return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def _write_sudo_app_marker(**fields: Any) -> None:
+    cur = _read_sudo_app_marker()
+    cur.update(fields)
+    sudo_app_marker().write_text(json.dumps(cur))
+
+
+def sudo_app_status() -> dict[str, Any]:
+    launcher = sudo_app_launcher()
+    installed = launcher is not None
+    mark = _read_sudo_app_marker()
+    return {
+        "ok": True,
+        "installed": installed,
+        "declined": bool(mark.get("declined")) and not installed,
+        "launcher": str(launcher) if launcher else None,
+    }
+
+
+def _sudo_app_script(name: str) -> Path | None:
+    for p in (
+        HERE / "packaging" / name,
+        HERE / name,
+        Path.home() / ".local" / "share" / "adjutant-ui" / name,
+        Path("/usr/local/share/adjutant-ui") / name,
+        Path("/usr/share/adjutant-ui") / name,
+    ):
+        if p.is_file():
+            return p
+    return None
+
+
+def sudo_app_action(action: str) -> dict[str, Any]:
+    import subprocess
+
+    if action == "decline":
+        _write_sudo_app_marker(declined=True, installed=False)
+        out = sudo_app_status()
+        out["declined"] = True
+        return out
+    if action == "launch":
+        launcher = sudo_app_launcher()
+        if launcher is None:
+            return {"ok": False, "error": "NOPASSWD app is not installed", "installed": False}
+        subprocess_detach([str(launcher)])
+        out = sudo_app_status()
+        out["ok"] = True
+        return out
+    if action == "install":
+        script = _sudo_app_script("install-sudo-app.sh")
+        if script is None:
+            return {"ok": False, "error": "install-sudo-app.sh not found"}
+        env = os.environ.copy()
+        env["ADJUTANT_UI_ROOT"] = str(HERE)
+        proc = subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        if proc.returncode != 0:
+            return {
+                "ok": False,
+                "error": (proc.stderr or proc.stdout or f"install exited {proc.returncode}").strip(),
+            }
+        _write_sudo_app_marker(installed=True, declined=False)
+        launcher = sudo_app_launcher()
+        if launcher is not None:
+            subprocess_detach([str(launcher)])
+        out = sudo_app_status()
+        out["ok"] = True
+        return out
+    if action == "uninstall":
+        script = _sudo_app_script("uninstall-sudo-app.sh")
+        if script is None:
+            return {"ok": False, "error": "uninstall-sudo-app.sh not found", **sudo_app_status()}
+        proc = subprocess.run(
+            ["bash", str(script)],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        _write_sudo_app_marker(installed=False, declined=False)
+        out = sudo_app_status()
+        out["ok"] = proc.returncode == 0
+        if proc.returncode != 0:
+            out["error"] = (proc.stderr or proc.stdout or "uninstall failed").strip()
+        return out
+    return {"ok": False, "error": "unknown action", **sudo_app_status()}
+
+
 def post_session(state: dict[str, Any], cwd: str, argv: list[str], mode: str) -> dict[str, Any]:
     import urllib.request
 
@@ -1175,7 +1305,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.3"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.4"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:

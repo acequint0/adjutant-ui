@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADJUTANT // NOPASSWD</title>
+  <link rel="icon" href="/icons/adjutant.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div id="crt">
+    <header id="top">
+      <div class="brand">
+        <span class="chevron"></span>
+        <div>
+          <div class="title">ADJUTANT</div>
+          <div class="subtitle">NOPASSWD UTILITY // SUDO</div>
+        </div>
+      </div>
+      <div class="ticks" aria-hidden="true"></div>
+      <div class="link">
+        <span class="led" id="led"></span>
+        <span id="link-state">STANDBY</span>
+      </div>
+    </header>
+    <main>
+      <section class="bezel">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+        <div class="stage">
+          <div class="stage-kicker">PASSWORDLESS SUDO</div>
+          <div class="sudo-dock large">
+            <span class="sudo-tag">NOPASSWD</span>
+            <button type="button" id="btn-sudo" class="switch" role="switch" aria-checked="false" aria-label="Passwordless sudo">
+              <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+              <span class="switch-state" id="sudo-state">OFF</span>
+            </button>
+          </div>
+          <div class="stage-hint" id="hint">TOGGLE TO ENABLE OR DISABLE SUDO WITHOUT A PASSWORD</div>
+        </div>
+      </section>
+    </main>
+    <footer id="bottom">
+      <span id="meta-user"></span>
+      <span class="sep">/</span>
+      <span id="meta-host">127.0.0.1</span>
+      <span class="grow"></span>
+      <button type="button" id="btn-uninstall" class="foot-link" title="Remove only this NOPASSWD desktop app">
+        UNINSTALL NOPASSWD UTILITY
+      </button>
+      <span class="sep">/</span>
+      <span id="meta-clock"></span>
+    </footer>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
