@@ -133,7 +133,7 @@ def open_browser(url: str) -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "adjutant-sudo/0.2.4"
+    server_version = "adjutant-sudo/0.2.5"
 
     def log_message(self, fmt: str, *args: object) -> None:
         return

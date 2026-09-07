@@ -8,7 +8,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
-VERSION="$(cat VERSION 2>/dev/null || echo 0.2.4)"
+VERSION="$(cat VERSION 2>/dev/null || echo 0.2.5)"
 SYSTEM=0
 PREFIX="${PREFIX:-}"
 
@@ -487,7 +487,7 @@ echo "Stop:    adjutant --stop"
 echo
 echo "Kali / another Debian machine — clone from GitHub:"
 echo "  git clone https://github.com/acequint0/adjutant-ui.git"
-echo "  cd adjutant-ui && git checkout v0.2.4 && ./install.sh"
+echo "  cd adjutant-ui && git checkout v0.2.5 && ./install.sh"
 echo
 echo "Or one-liner:"
-echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packaging/kali-install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.5/packaging/kali-install.sh | bash"

@@ -228,18 +228,44 @@ def set_winsize(fd: int, rows: int, cols: int) -> None:
     fcntl.ioctl(fd, termios.TIOCSWINSZ, packed)
 
 
-def spawn_pty(argv: list[str], cwd: str, cols: int, rows: int) -> tuple[int, int]:
+def pty_env(cols: int, rows: int, grok_palette: bool = False) -> dict[str, str]:
+    """Environment for PTY children.
+
+    Grok's TUI has no custom theme files. Inside Adjutant we drop it to 16-color
+    so GrokNight quantizes onto the xterm.js palette (Adjutant red HUD).
+    """
+    env = os.environ.copy()
+    env["COLUMNS"] = str(cols)
+    env["LINES"] = str(rows)
+    if grok_palette:
+        env["TERM"] = "xterm"
+        env.pop("COLORTERM", None)
+        env.pop("LC_COLORTERM", None)
+        theme = os.environ.get("ADJUTANT_GROK_THEME") or "groknight"
+        env["GROK_THEME"] = theme
+        env["LC_GROK_THEME"] = theme
+        env["GROK_APPEARANCE"] = "dark"
+        env["LC_GROK_APPEARANCE"] = "dark"
+    else:
+        env["TERM"] = "xterm-256color"
+        env["COLORTERM"] = "truecolor"
+    return env
+
+
+def spawn_pty(
+    argv: list[str],
+    cwd: str,
+    cols: int,
+    rows: int,
+    grok_palette: bool = False,
+) -> tuple[int, int]:
     pid, fd = pty.fork()
     if pid == 0:
         try:
             os.chdir(cwd)
         except OSError:
             pass
-        env = os.environ.copy()
-        env["TERM"] = "xterm-256color"
-        env["COLORTERM"] = "truecolor"
-        env["COLUMNS"] = str(cols)
-        env["LINES"] = str(rows)
+        env = pty_env(cols, rows, grok_palette=grok_palette)
         try:
             os.execvpe(argv[0], argv, env)
         except OSError as exc:
@@ -668,7 +694,13 @@ class ConsoleServer:
     def _spawn(self, sess: Session, cols: int, rows: int) -> None:
         if sess.started:
             return
-        pid, fd = spawn_pty(sess.argv, sess.cwd, cols, rows)
+        pid, fd = spawn_pty(
+            sess.argv,
+            sess.cwd,
+            cols,
+            rows,
+            grok_palette=sess.mode == "AGENT",
+        )
         sess.pid = pid
         sess.fd = fd
         sess.started = True
@@ -1305,7 +1337,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.4"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.5"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:

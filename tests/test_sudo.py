@@ -32,6 +32,7 @@ def test_ui_assets() -> None:
     assert 'role="switch"' in html
     assert "/api/sudo" in js
     assert "/api/sudo-app" in js
+    assert 'magenta: "#e22b2b"' in js
     assert "aria-checked" in js
     app_html = (ROOT / "sudo_app" / "www" / "index.html").read_text()
     assert "UNINSTALL NOPASSWD UTILITY" in app_html
@@ -81,6 +82,16 @@ def test_sudo_app_status_shape() -> None:
     assert "declined" in got
 
 
+def test_pty_env_grok_palette() -> None:
+    grok = mod.pty_env(80, 24, grok_palette=True)
+    assert grok["TERM"] == "xterm"
+    assert "COLORTERM" not in grok
+    assert grok["GROK_THEME"] == "groknight"
+    shell = mod.pty_env(80, 24, grok_palette=False)
+    assert shell["TERM"] == "xterm-256color"
+    assert shell["COLORTERM"] == "truecolor"
+
+
 if __name__ == "__main__":
     tests = [
         test_ui_assets,
@@ -89,6 +100,7 @@ if __name__ == "__main__":
         test_helper_refuses_non_root,
         test_probe_sudo_shape,
         test_sudo_app_status_shape,
+        test_pty_env_grok_palette,
     ]
     for fn in tests:
         fn()

@@ -1,4 +1,4 @@
-# Adjutant UI 0.2.4
+# Adjutant UI 0.2.5
 
 Web command console for Grok Build. `adjutant` opens a local browser window that wraps the Grok TUI in a terminal emulator.
 
@@ -17,7 +17,7 @@ sudo apt-get update
 sudo apt-get install -y git python3
 git clone https://github.com/acequint0/adjutant-ui.git
 cd adjutant-ui
-git checkout v0.2.4
+git checkout v0.2.5
 chmod +x install.sh
 ./install.sh
 ```
@@ -33,7 +33,7 @@ git pull
 ### 2. One-liner from GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packaging/kali-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.5/packaging/kali-install.sh | bash
 ```
 
 ### 3. Add GitHub as an apt repository
@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packag
 This points apt at the latest GitHub Release (Packages index + `.deb`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.4/packaging/add-repo.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.5/packaging/add-repo.sh | sudo bash
 ```
 
 Or by hand:
@@ -63,8 +63,8 @@ sudo apt-get install --only-upgrade adjutant-ui
 ### 4. Download the `.deb`
 
 ```bash
-wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.4/adjutant-ui_0.2.4_all.deb
-sudo apt-get install -y ./adjutant-ui_0.2.4_all.deb
+wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.5/adjutant-ui_0.2.5_all.deb
+sudo apt-get install -y ./adjutant-ui_0.2.5_all.deb
 ```
 
 ## Install from this folder (any Debian-based OS)
@@ -87,7 +87,7 @@ Build the Debian package locally:
 
 ```bash
 ./packaging/build-deb.sh
-sudo apt-get install -y ./dist/adjutant-ui_0.2.4_all.deb
+sudo apt-get install -y ./dist/adjutant-ui_0.2.5_all.deb
 ```
 
 ## Use
@@ -117,7 +117,8 @@ Install binds **Super+T** (Meta+T) to the web console when that shortcut is free
 
 | Version | Notes |
 |---|---|
-| **0.2.4** | First NOPASSWD click offers a separate desktop app. After install, the switch opens that app and mirrors its on/off state. |
+| **0.2.5** | Grok's TUI inside Adjutant uses the Adjutant red HUD palette (16-color remap; does not change Grok outside Adjutant). |
+| 0.2.4 | First NOPASSWD click offers a separate desktop app. After install, the switch opens that app and mirrors its on/off state. |
 | 0.2.3 | Footer **NOPASSWD** toggle turns passwordless sudo on and off for the current user. |
 | 0.2.2 | Installer binds **Super+T** to the Adjutant UI when that shortcut is not already taken (XFCE, Cinnamon, GNOME, MATE, KDE). |
 | 0.2.1 | User install writes `export PATH="$HOME/.local/bin:$PATH"` into `~/.bashrc` so `adjutant` works in new shells. |
