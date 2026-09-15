@@ -46,15 +46,24 @@ def test_ui_assets() -> None:
     assert "aria-checked" in js
     app_html = (ROOT / "sudo_app" / "www" / "index.html").read_text()
     assert "UNINSTALL NOPASSWD UTILITY" in app_html
+    assert 'id="btn-nolock"' in app_html
+    assert 'id="nolock-state"' in app_html
+    assert "NOLOCK" in app_html
     assert (ROOT / "packaging" / "install-sudo-app.sh").is_file()
     assert (ROOT / "packaging" / "uninstall-sudo-app.sh").is_file()
     assert (ROOT / "packaging" / "sudo-askpass.sh").is_file()
     sudo_js = (ROOT / "sudo_app" / "www" / "app.js").read_text()
     assert "IDENTIFY WITH YOUR PASSWORD" in sudo_js
+    assert "/api/nolock" in sudo_js
+    assert "SCREEN WILL NOT LOCK FOR THIS SESSION" in sudo_js
+    sudo_css = (ROOT / "sudo_app" / "www" / "app.css").read_text()
+    assert ".stage-docks" in sudo_css
     sudo_srv = (ROOT / "sudo_app" / "server.py").read_text()
     assert "WINDOW_WIDTH = 410" in sudo_srv
-    assert "WINDOW_HEIGHT = 280" in sudo_srv
+    assert "WINDOW_HEIGHT = 340" in sudo_srv
     assert "--window-size=820,560" not in sudo_srv
+    assert 'path == "/api/nolock"' in sudo_srv
+    assert "--nolock-hold" in sudo_srv
     helper = (ROOT / "packaging" / "sudo-switch.sh").read_text()
     assert "PASSWD:" in helper
     assert "sudo-switch off" in helper or "off" in helper
@@ -124,6 +133,52 @@ def test_sudo_app_status_shape() -> None:
     assert "declined" in got
 
 
+def test_loopback_host() -> None:
+    assert mod.loopback_host("0.0.0.0") == "127.0.0.1"
+    assert mod.loopback_host("127.0.0.1") == "127.0.0.1"
+    assert mod.loopback_host("192.168.1.5") == "192.168.1.5"
+
+
+def _load_sudo_app():
+    spec = importlib.util.spec_from_file_location("adjutant_sudo_server", ROOT / "sudo_app" / "server.py")
+    sudo_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sudo_mod)
+    return sudo_mod
+
+
+def test_parse_xset() -> None:
+    sudo_mod = _load_sudo_app()
+    sample = (
+        "Screen Saver:\n"
+        "  prefer blanking:  yes    allow exposures:  yes\n"
+        "  timeout:  600    cycle:  600\n"
+        "DPMS (Display Power Management Signaling):\n"
+        "  Standby: 600    Suspend: 600    Off: 600\n"
+        "  DPMS is Disabled\n"
+    )
+    got = sudo_mod.parse_xset(sample)
+    assert got["timeout"] == 600
+    assert got["cycle"] == 600
+    assert got["dpms"] is False
+    assert got["blank"] is True
+    off = sudo_mod.parse_xset(
+        "  prefer blanking:  no    allow exposures:  yes\n"
+        "  timeout:  0    cycle:  600\n"
+        "  DPMS is Enabled\n"
+    )
+    assert off["timeout"] == 0
+    assert off["blank"] is False
+    assert off["dpms"] is True
+
+
+def test_nolock_probe_shape() -> None:
+    sudo_mod = _load_sudo_app()
+    got = sudo_mod.probe_nolock()
+    assert got["ok"] is True
+    assert "enabled" in got
+    assert isinstance(got["enabled"], bool)
+
+
 def test_pty_env_grok_palette() -> None:
     grok = mod.pty_env(80, 24, grok_palette=True)
     assert grok["TERM"] == "xterm"
@@ -144,6 +199,9 @@ if __name__ == "__main__":
         test_probe_sudo_shape,
         test_sudo_app_status_shape,
         test_pty_env_grok_palette,
+        test_loopback_host,
+        test_parse_xset,
+        test_nolock_probe_shape,
     ]
     for fn in tests:
         fn()

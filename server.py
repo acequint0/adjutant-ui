@@ -23,7 +23,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 
-BIND_DEFAULT = "127.0.0.1"
+BIND_DEFAULT = os.environ.get("ADJUTANT_BIND", "0.0.0.0")
 PORT_DEFAULT = 4747
 UI_NAME = "adjutant-ui"
 LLAMAFILE_DEFAULT = "http://127.0.0.1:8080"
@@ -32,6 +32,28 @@ _llamafile_start_lock = threading.Lock()
 
 HERE = Path(__file__).resolve().parent
 WWW = HERE / "www"
+
+
+def loopback_host(bind: str) -> str:
+    if bind in ("0.0.0.0", "::", "::0", ""):
+        return "127.0.0.1"
+    return bind
+
+
+def lan_hosts() -> list[str]:
+    import socket
+
+    ips: list[str] = []
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(("8.8.8.8", 80))
+        ip = sock.getsockname()[0]
+        sock.close()
+        if ip and not ip.startswith("127."):
+            ips.append(ip)
+    except OSError:
+        pass
+    return ips
 
 
 def _state_dir() -> Path:
@@ -445,7 +467,8 @@ class ConsoleServer:
                 return
             argv = [str(x) for x in argv]
             sess = self.create_session(str(cwd), argv, str(mode))
-            url = f"http://{self.bind}:{self.port}/?s={sess.id}"
+            host = (headers.get("host") or f"{loopback_host(self.bind)}:{self.port}").split("/")[0]
+            url = f"http://{host}/?s={sess.id}"
             await self._send_json(writer, {"id": sess.id, "url": url})
             return
         if method == "POST" and path == "/api/session/clone":
@@ -459,7 +482,8 @@ class ConsoleServer:
                 await self._send_status(writer, HTTPStatus.NOT_FOUND)
                 return
             sess = self.create_session(src.cwd, list(src.argv), src.mode)
-            url = f"http://{self.bind}:{self.port}/?s={sess.id}"
+            host = (headers.get("host") or f"{loopback_host(self.bind)}:{self.port}").split("/")[0]
+            url = f"http://{host}/?s={sess.id}"
             await self._send_json(writer, {"ok": True, "id": sess.id, "url": url})
             return
         if method == "GET" and path == "/sound/online.wav":
@@ -1252,7 +1276,7 @@ def sudo_app_action(action: str) -> dict[str, Any]:
 def post_session(state: dict[str, Any], cwd: str, argv: list[str], mode: str) -> dict[str, Any]:
     import urllib.request
 
-    url = f"http://{state['bind']}:{state['port']}/api/session"
+    url = f"http://{loopback_host(state['bind'])}:{state['port']}/api/session"
     req = urllib.request.Request(
         url,
         data=json.dumps({"cwd": cwd, "argv": argv, "mode": mode}).encode(),
@@ -1269,7 +1293,7 @@ def post_session(state: dict[str, Any], cwd: str, argv: list[str], mode: str) ->
 def health_ok(state: dict[str, Any]) -> bool:
     import urllib.request
 
-    url = f"http://{state['bind']}:{state['port']}/health"
+    url = f"http://{loopback_host(state['bind'])}:{state['port']}/health"
     try:
         with urllib.request.urlopen(url, timeout=1) as resp:
             return resp.status == 200
@@ -1428,7 +1452,7 @@ def main() -> None:
         return
     if args.version:
         ver_path = HERE / "VERSION"
-        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.6"
+        ver = ver_path.read_text().strip() if ver_path.is_file() else "0.2.7"
         print(f"adjutant-ui {ver}")
         return
     if args.stop:
@@ -1437,7 +1461,9 @@ def main() -> None:
     if args.status:
         state = load_state()
         if state and health_ok(state):
-            print(f"online  pid={state['pid']}  http://{state['bind']}:{state['port']}")
+            print(
+                f"online  pid={state['pid']}  http://{loopback_host(state['bind'])}:{state['port']}"
+            )
         else:
             print("offline")
         return
@@ -1467,14 +1493,14 @@ def main() -> None:
     alpha = post_session(state, cwd, argv, mode)
     beta = post_session(state, cwd, argv, mode)
     omega = post_session(state, cwd, argv, mode)
-    url = (
-        f"http://{state['bind']}:{state['port']}/"
-        f"?s={alpha['id']}&alpha={alpha['id']}&beta={beta['id']}&omega={omega['id']}"
-    )
+    qs = f"?s={alpha['id']}&alpha={alpha['id']}&beta={beta['id']}&omega={omega['id']}"
+    local = f"http://{loopback_host(state['bind'])}:{state['port']}/{qs}"
     if not args.no_browser:
-        open_browser(url)
-    print(f"ADJUTANT ONLINE")
-    print(url)
+        open_browser(local)
+    print("ADJUTANT ONLINE")
+    print(local)
+    for ip in lan_hosts():
+        print(f"http://{ip}:{state['port']}/{qs}")
     print("adjutant --stop   to shut down the console")
 
 

@@ -31,14 +31,23 @@
         <span class="corner br"></span>
         <div class="stage">
           <div class="stage-kicker">PASSWORDLESS SUDO</div>
-          <div class="sudo-dock large">
-            <span class="sudo-tag">NOPASSWD</span>
-            <button type="button" id="btn-sudo" class="switch" role="switch" aria-checked="false" aria-label="Passwordless sudo">
-              <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
-              <span class="switch-state" id="sudo-state">OFF</span>
-            </button>
+          <div class="stage-docks">
+            <div class="sudo-dock large">
+              <span class="sudo-tag">NOPASSWD</span>
+              <button type="button" id="btn-sudo" class="switch" role="switch" aria-checked="false" aria-label="Passwordless sudo">
+                <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+                <span class="switch-state" id="sudo-state">OFF</span>
+              </button>
+            </div>
+            <div class="sudo-dock large">
+              <span class="sudo-tag">NOLOCK</span>
+              <button type="button" id="btn-nolock" class="switch" role="switch" aria-checked="false" aria-label="Inhibit screen lock for this session">
+                <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+                <span class="switch-state" id="nolock-state">OFF</span>
+              </button>
+            </div>
           </div>
-          <div class="stage-hint" id="hint">TURN ON REQUIRES YOUR PASSWORD // TURN OFF DOES NOT</div>
+          <div class="stage-hint" id="hint">NOPASSWD ENABLE NEEDS YOUR PASSWORD // NOLOCK LASTS THIS LOGIN</div>
         </div>
       </section>
     </main>

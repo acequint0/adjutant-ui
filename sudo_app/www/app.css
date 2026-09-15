@@ -161,9 +161,21 @@ main { min-height: 0; padding: 2px; }
 .grow { flex: 1; }
 .sep { opacity: 0.35; padding: 0 6px; }
 
+.stage-docks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
 .sudo-dock { display: flex; align-items: center; gap: 10px; }
 .sudo-dock.large { gap: 10px; transform: none; }
-.sudo-tag { color: var(--muted); font-size: 11px; letter-spacing: 0.22em; }
+.sudo-tag {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  min-width: 8.5em;
+  text-align: right;
+}
 
 .switch {
   appearance: none;

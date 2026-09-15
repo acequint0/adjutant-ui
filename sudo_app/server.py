@@ -9,6 +9,7 @@ import os
 import secrets
 import shutil
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -18,7 +19,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
-BIND_DEFAULT = "127.0.0.1"
+BIND_DEFAULT = os.environ.get("ADJUTANT_SUDO_BIND", os.environ.get("ADJUTANT_BIND", "0.0.0.0"))
 PORT_DEFAULT = 4748
 NAME = "adjutant-sudo"
 
@@ -94,7 +95,8 @@ def health_ok(state: dict[str, Any]) -> bool:
     import urllib.request
 
     try:
-        url = f"http://{state['bind']}:{state['port']}/health"
+        host = "127.0.0.1" if state.get("bind") in ("0.0.0.0", "::", "::0", "") else state["bind"]
+        url = f"http://{host}:{state['port']}/health"
         with urllib.request.urlopen(url, timeout=1) as resp:
             return resp.status == 200
     except Exception:
@@ -102,8 +104,13 @@ def health_ok(state: dict[str, Any]) -> bool:
 
 
 WINDOW_WIDTH = 410
-WINDOW_HEIGHT = 280
+WINDOW_HEIGHT = 340
 WINDOW_TITLE = "ADJUTANT // NOPASSWD"
+
+NOLOCK_WHO = "adjutant-sudo"
+NOLOCK_WHY = "session no-lock"
+DEFAULT_XSET = {"timeout": 600, "cycle": 600, "dpms": False, "blank": True}
+_nolock_mu = threading.Lock()
 
 
 def _force_window_size() -> None:
@@ -170,8 +177,241 @@ def open_browser(url: str) -> None:
         threading.Thread(target=_force_window_size, daemon=True).start()
 
 
+def nolock_path() -> Path:
+    return _state_dir() / "nolock.json"
+
+
+def _load_nolock() -> dict[str, Any]:
+    p = nolock_path()
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text())
+        return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def _save_nolock(data: dict[str, Any]) -> None:
+    nolock_path().write_text(json.dumps(data))
+
+
+def parse_xset(text: str) -> dict[str, Any]:
+    out: dict[str, Any] = {"timeout": None, "cycle": None, "dpms": None, "blank": None}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("prefer blanking:"):
+            token = line.split("prefer blanking:", 1)[1].strip().split()[0].lower()
+            out["blank"] = token.startswith("yes")
+        if "timeout:" in line and "cycle:" in line:
+            nums: list[int] = []
+            bits = line.replace("timeout:", " ").replace("cycle:", " ").split()
+            for bit in bits:
+                if bit.isdigit():
+                    nums.append(int(bit))
+            if len(nums) >= 2:
+                out["timeout"], out["cycle"] = nums[0], nums[1]
+        if line.startswith("DPMS is "):
+            out["dpms"] = line.lower().rstrip(".").endswith("enabled")
+    return out
+
+
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    try:
+        cmd = Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+    except OSError:
+        return False
+    return "--nolock-hold" in cmd
+
+
+def _read_xset() -> dict[str, Any]:
+    xset = shutil.which("xset")
+    if not xset:
+        return dict(DEFAULT_XSET)
+    proc = subprocess.run([xset, "q"], capture_output=True, text=True)
+    got = parse_xset(proc.stdout or "")
+    if got.get("timeout") is None:
+        return dict(DEFAULT_XSET)
+    return {
+        "timeout": int(got["timeout"]),
+        "cycle": int(got["cycle"] if got.get("cycle") is not None else DEFAULT_XSET["cycle"]),
+        "dpms": bool(got["dpms"]) if got.get("dpms") is not None else False,
+        "blank": bool(got["blank"]) if got.get("blank") is not None else True,
+    }
+
+
+def _snapshot_xset(prev: dict[str, Any] | None = None) -> dict[str, Any]:
+    if prev and int(prev.get("timeout") or 0) > 0:
+        return {
+            "timeout": int(prev["timeout"]),
+            "cycle": int(prev.get("cycle") or DEFAULT_XSET["cycle"]),
+            "dpms": bool(prev.get("dpms")),
+            "blank": bool(prev.get("blank", True)),
+        }
+    got = _read_xset()
+    if int(got.get("timeout") or 0) <= 0:
+        return dict(DEFAULT_XSET)
+    return got
+
+
+def _xset_off() -> None:
+    xset = shutil.which("xset")
+    if not xset:
+        return
+    for args in (["s", "off"], ["s", "noblank"], ["-dpms"], ["s", "reset"]):
+        subprocess.run([xset, *args], capture_output=True)
+
+
+def _xset_restore(saved: dict[str, Any]) -> None:
+    xset = shutil.which("xset")
+    if not xset:
+        return
+    timeout = int(saved.get("timeout") or DEFAULT_XSET["timeout"])
+    cycle = int(saved.get("cycle") or DEFAULT_XSET["cycle"])
+    subprocess.run([xset, "s", str(timeout), str(cycle)], capture_output=True)
+    subprocess.run([xset, "s", "blank" if saved.get("blank", True) else "noblank"], capture_output=True)
+    subprocess.run([xset, "+dpms" if saved.get("dpms") else "-dpms"], capture_output=True)
+
+
+def _inhibit_argv() -> list[str]:
+    ll = shutil.which("light-locker-command")
+    if ll:
+        return [ll, "--inhibit", "--application-name", NOLOCK_WHO, "--reason", NOLOCK_WHY]
+    xf = shutil.which("xfce4-screensaver-command")
+    if xf:
+        return [xf, "--inhibit"]
+    gs = shutil.which("gnome-screensaver-command")
+    if gs:
+        return [gs, "--inhibit"]
+    mate = shutil.which("mate-screensaver-command")
+    if mate:
+        return [mate, "--inhibit"]
+    cin = shutil.which("cinnamon-screensaver-command")
+    if cin:
+        return [cin, "--inhibit"]
+    inh = shutil.which("systemd-inhibit")
+    if inh:
+        return [
+            inh,
+            "--what=idle:sleep",
+            f"--who={NOLOCK_WHO}",
+            f"--why={NOLOCK_WHY}",
+            "--mode=block",
+            "sleep",
+            "infinity",
+        ]
+    return []
+
+
+def _nolock_hold() -> None:
+    child: subprocess.Popen[bytes] | None = None
+
+    def stop(*_args: object) -> None:
+        nonlocal child
+        if child is not None and child.poll() is None:
+            try:
+                os.killpg(child.pid, signal.SIGTERM)
+            except OSError:
+                try:
+                    child.terminate()
+                except OSError:
+                    pass
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    argv = _inhibit_argv()
+    while True:
+        _xset_off()
+        if argv and (child is None or child.poll() is not None):
+            child = subprocess.Popen(
+                argv,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        poke = shutil.which("light-locker-command")
+        if poke:
+            subprocess.run([poke, "--poke"], capture_output=True)
+        time.sleep(40)
+
+
+def _start_holder() -> int:
+    proc = subprocess.Popen(
+        [sys.executable, str(Path(__file__).resolve()), "--nolock-hold"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+        env=os.environ.copy(),
+    )
+    return int(proc.pid)
+
+
+def _stop_holder(pid: int) -> None:
+    if not _pid_alive(pid):
+        return
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        return
+    for _ in range(20):
+        time.sleep(0.05)
+        if not _pid_alive(pid):
+            return
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
+def probe_nolock() -> dict[str, Any]:
+    st = _load_nolock()
+    pid = int(st.get("pid") or 0)
+    alive = _pid_alive(pid)
+    enabled = bool(st.get("enabled") and alive)
+    out: dict[str, Any] = {"ok": True, "enabled": enabled}
+    if pid and not alive and st.get("enabled"):
+        out["stale"] = True
+    if alive:
+        out["pid"] = pid
+    return out
+
+
+def set_nolock(enabled: bool) -> dict[str, Any]:
+    with _nolock_mu:
+        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+            return {"ok": False, "enabled": False, "error": "no graphical session (DISPLAY unset)"}
+        st = _load_nolock()
+        pid = int(st.get("pid") or 0)
+        if enabled:
+            saved = _snapshot_xset(st.get("saved") if isinstance(st.get("saved"), dict) else None)
+            if _pid_alive(pid):
+                _xset_off()
+                _save_nolock({"enabled": True, "pid": pid, "saved": saved})
+                return {"ok": True, "enabled": True, "pid": pid}
+            new_pid = _start_holder()
+            _xset_off()
+            _save_nolock({"enabled": True, "pid": new_pid, "saved": saved})
+            return {"ok": True, "enabled": True, "pid": new_pid}
+        if pid:
+            _stop_holder(pid)
+        saved = st.get("saved") if isinstance(st.get("saved"), dict) else dict(DEFAULT_XSET)
+        _xset_restore(saved)
+        _save_nolock({"enabled": False, "saved": saved})
+        return {"ok": True, "enabled": False}
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "adjutant-sudo/0.2.6"
+    server_version = "adjutant-sudo/0.2.7"
 
     def log_message(self, fmt: str, *args: object) -> None:
         return
@@ -213,6 +453,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/sudo":
             self._json(ctl().probe_sudo())
             return
+        if path == "/api/nolock":
+            self._json(probe_nolock())
+            return
         if path in ("/", "/index.html"):
             self._file(WWW / "index.html")
             return
@@ -243,6 +486,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.BAD_REQUEST)
                 return
             self._json(ctl().set_sudo(bool(payload.get("enabled"))))
+            return
+        if path == "/api/nolock":
+            try:
+                payload = json.loads(body.decode() or "{}")
+            except json.JSONDecodeError:
+                self.send_error(HTTPStatus.BAD_REQUEST)
+                return
+            self._json(set_nolock(bool(payload.get("enabled"))))
             return
         if path == "/api/uninstall":
             self._json(uninstall_self())
@@ -328,10 +579,14 @@ def main() -> None:
     p.add_argument("--serve", action="store_true")
     p.add_argument("--stop", action="store_true")
     p.add_argument("--status", action="store_true")
+    p.add_argument("--nolock-hold", action="store_true")
     p.add_argument("--no-browser", action="store_true")
     p.add_argument("--bind", default=BIND_DEFAULT)
     p.add_argument("--port", type=int, default=PORT_DEFAULT)
     args = p.parse_args()
+    if args.nolock_hold:
+        _nolock_hold()
+        return
     if args.serve:
         serve(args.bind, args.port)
         return
@@ -341,14 +596,16 @@ def main() -> None:
     if args.status:
         state = load_state()
         if state and health_ok(state):
-            print(f"online  http://{state['bind']}:{state['port']}")
+            host = "127.0.0.1" if state.get("bind") in ("0.0.0.0", "::", "::0", "") else state["bind"]
+            print(f"online  http://{host}:{state['port']}")
         else:
             print("offline")
         return
     state = load_state()
     if not (state and health_ok(state)):
         state = start_daemon(args.bind, args.port)
-    url = f"http://{state['bind']}:{state['port']}/"
+    host = "127.0.0.1" if state.get("bind") in ("0.0.0.0", "::", "::0", "") else state["bind"]
+    url = f"http://{host}:{state['port']}/"
     if not args.no_browser:
         open_browser(url)
     print("ADJUTANT NOPASSWD")

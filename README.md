@@ -1,4 +1,4 @@
-# Adjutant UI 0.2.6
+# Adjutant UI 0.2.7
 
 **A.UI** is the short name for Adjutant UI in docs and prompts. The two names are the same product. Commands, files, packages, and desktop launchers stay `adjutant` / `adjutant-ui`.
 
@@ -19,7 +19,7 @@ sudo apt-get update
 sudo apt-get install -y git python3
 git clone https://github.com/acequint0/adjutant-ui.git
 cd adjutant-ui
-git checkout v0.2.6
+git checkout v0.2.7
 chmod +x install.sh
 ./install.sh
 ```
@@ -35,7 +35,7 @@ git pull
 ### 2. One-liner from GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.6/packaging/kali-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.7/packaging/kali-install.sh | bash
 ```
 
 ### 3. Add GitHub as an apt repository
@@ -43,7 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.6/packag
 This points apt at the latest GitHub Release (Packages index + `.deb`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.6/packaging/add-repo.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/acequint0/adjutant-ui/v0.2.7/packaging/add-repo.sh | sudo bash
 ```
 
 Or by hand:
@@ -65,8 +65,8 @@ sudo apt-get install --only-upgrade adjutant-ui
 ### 4. Download the `.deb`
 
 ```bash
-wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.6/adjutant-ui_0.2.6_all.deb
-sudo apt-get install -y ./adjutant-ui_0.2.6_all.deb
+wget https://github.com/acequint0/adjutant-ui/releases/download/v0.2.7/adjutant-ui_0.2.7_all.deb
+sudo apt-get install -y ./adjutant-ui_0.2.7_all.deb
 ```
 
 ## Install from this folder (any Debian-based OS)
@@ -89,7 +89,7 @@ Build the Debian package locally:
 
 ```bash
 ./packaging/build-deb.sh
-sudo apt-get install -y ./dist/adjutant-ui_0.2.6_all.deb
+sudo apt-get install -y ./dist/adjutant-ui_0.2.7_all.deb
 ```
 
 ## Use
@@ -109,11 +109,11 @@ The console header has **IMAGINE** and **GROK** buttons. Imagine is the original
 
 The console has three Grok terminals behind **ALPHA**, **BETA**, and **OMEGA** tabs. Each tab is its own session.
 
-The footer has a **NOPASSWD** toggle. The first click asks to install a separate **Adjutant NOPASSWD** desktop app. After that app is installed, the switch opens it and follows whether passwordless sudo is on or off. Turning passwordless sudo **on** asks for your user password; turning it **off** does not. A small **UNINSTALL NOPASSWD** footer link removes only that utility. The footer also has a **LLAMAFILE** button. The llamafile button's first click starts `~/llamafile-pentest/run.sh` if nothing is listening on `127.0.0.1:8080`, flips the console green, and wraps that UI. Later clicks just bring that session back (llamafile stays running). Click the button again while it is showing to return to the Grok terminal. Override with `ADJUTANT_LLAMAFILE` / `ADJUTANT_LLAMAFILE_ROOT` if needed.
+The footer has a **NOPASSWD** toggle. The first click asks to install a separate **Adjutant NOPASSWD** desktop app. After that app is installed, the switch opens it and follows whether passwordless sudo is on or off. Turning passwordless sudo **on** asks for your user password; turning it **off** does not. Under that switch, **NOLOCK** stops the screen locking for this login session only (X screensaver off plus locker inhibit). Turning it off restores idle lock. Logout ends it. A small **UNINSTALL NOPASSWD** footer link removes only that utility. The footer also has a **LLAMAFILE** button. The llamafile button's first click starts `~/llamafile-pentest/run.sh` if nothing is listening on `127.0.0.1:8080`, flips the console green, and wraps that UI. Later clicks just bring that session back (llamafile stays running). Click the button again while it is showing to return to the Grok terminal. Override with `ADJUTANT_LLAMAFILE` / `ADJUTANT_LLAMAFILE_ROOT` if needed.
 
 Extra arguments are forwarded to Grok: `adjutant -c`, `adjutant -- "fix the bug"`.
 
-The console binds to `127.0.0.1` only.
+The console listens on **0.0.0.0:4747** (all interfaces) so other machines on the LAN can open it in a browser. The NOPASSWD utility listens on **4748**. Bind localhost-only with `ADJUTANT_BIND=127.0.0.1`.
 
 Install binds **Super+T** (Meta+T) to the web console when that shortcut is free. If Super+T is already used, the installer leaves it alone.
 
@@ -121,7 +121,8 @@ Install binds **Super+T** (Meta+T) to the web console when that shortcut is free
 
 | Version | Notes |
 |---|---|
-| **0.2.6** | ALPHA / BETA / OMEGA tabs, each with its own Grok terminal. NOPASSWD enable requires your password; disable does not. NOPASSWD utility window is half size. |
+| **0.2.7** | NOPASSWD utility **NOLOCK** toggle under the sudo switch: inhibit screen lock for this login. Console and utility listen on all interfaces (`0.0.0.0`); local URLs still use `127.0.0.1`. |
+| 0.2.6 | ALPHA / BETA / OMEGA tabs, each with its own Grok terminal. NOPASSWD enable requires your password; disable does not. NOPASSWD utility window is half size. |
 | 0.2.5 | Grok's TUI inside Adjutant uses the Adjutant red HUD palette (16-color remap; does not change Grok outside Adjutant). |
 | 0.2.4 | First NOPASSWD click offers a separate desktop app. After install, the switch opens that app and mirrors its on/off state. |
 | 0.2.3 | Footer **NOPASSWD** toggle turns passwordless sudo on and off for the current user. |
